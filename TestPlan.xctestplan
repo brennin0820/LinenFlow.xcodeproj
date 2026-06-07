@@ -1,0 +1,28 @@
+{
+  "configurations" : [
+    {
+      "id" : "D7F7DF00-A8DE-49D7-B697-A5D3CC75446E",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "selectedTags" : {
+        "includeXCTests" : true
+      },
+      "target" : {
+        "containerPath" : "container:LinenFlow.xcodeproj",
+        "identifier" : "AABBCCDDEEFF112233440003",
+        "name" : "LinenFlowTests"
+      }
+    }
+  ],
+  "version" : 1
+}
