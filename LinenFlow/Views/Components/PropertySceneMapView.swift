@@ -143,7 +143,7 @@ private struct PropertySceneMapRepresentable: UIViewRepresentable {
             mappedTowerCache = Dictionary(uniqueKeysWithValues: mappedTowers.map { ($0.tower.id, $0.tower) })
             towerNodes.removeAll()
             for entry in placements {
-                let node = makeTowerNode(tower: entry.tower, at: entry.position)
+                let node = TowerSceneFactory.makeNode(for: entry.tower, at: entry.position)
                 scene.rootNode.addChildNode(node)
                 towerNodes[entry.tower.id] = node
             }
