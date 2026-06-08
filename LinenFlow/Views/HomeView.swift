@@ -907,6 +907,18 @@ struct HomeView: View {
                     .stroke(LinenIconLibrary.color(forItem: item.name).opacity(0.55), lineWidth: 2)
             }
         }
+        .accessibilityLabel(linenCardAccessibilityLabel(item: item, isFocused: isFocused, isLockedElsewhere: isLockedElsewhere))
+        .accessibilityAddTraits(isFocused ? .isSelected : [])
+    }
+
+    private func linenCardAccessibilityLabel(item: LinenItem, isFocused: Bool, isLockedElsewhere: Bool) -> String {
+        if isFocused {
+            return "\(item.name), current editing item"
+        }
+        if isLockedElsewhere {
+            return "\(item.name), locked while another item is being edited"
+        }
+        return item.name
     }
 
     private var itemsForSelectedTower: [LinenItem] {

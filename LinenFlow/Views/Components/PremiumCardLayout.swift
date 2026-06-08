@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PremiumCardActionRow<Leading: View, Trailing: View>: View {
-    var spacing: CGFloat = 10
+    var spacing: CGFloat = 12
     @ViewBuilder var leading: () -> Leading
     @ViewBuilder var trailing: () -> Trailing
 
@@ -9,8 +9,10 @@ struct PremiumCardActionRow<Leading: View, Trailing: View>: View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .center, spacing: spacing) {
                 leading()
-                Spacer(minLength: 8)
+                    .layoutPriority(1)
+                Spacer(minLength: 10)
                 trailing()
+                    .fixedSize(horizontal: true, vertical: false)
             }
 
             VStack(alignment: .leading, spacing: spacing) {
@@ -18,6 +20,7 @@ struct PremiumCardActionRow<Leading: View, Trailing: View>: View {
                 HStack {
                     Spacer(minLength: 0)
                     trailing()
+                        .fixedSize(horizontal: true, vertical: false)
                 }
             }
         }

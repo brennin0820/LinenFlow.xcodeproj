@@ -418,6 +418,20 @@ struct FloorDistributionView: View {
         return "Current Trip, \(names) selected, \(viewModel.currentTripItemNames.count) of 2 items."
     }
 
+    private var nextFloorLoadAccessibilityLabel: String {
+        if let floor = nextUndoneFloor {
+            return "Current floor focus, floor \(floor), \(activeFloorUnits) \(deliveryUnitLabel), \(activeFloorRows.count) items, \(completedFloorCount) of \(deliveryFloorNumbers.count) floors complete."
+        }
+        return "Route complete, all \(deliveryFloorNumbers.count) floors delivered."
+    }
+
+    private var nextFloorFocusAccessibilityLabel: String {
+        if let floor = nextUndoneFloor {
+            return "Mark floor \(floor) complete"
+        }
+        return "All floors complete"
+    }
+
     private func currentTripItemRow(_ summary: CalculationSummary) -> some View {
         let isSelected = viewModel.currentTripItemNames.contains(summary.itemName)
         let isFull = viewModel.currentTripItemNames.count >= 2
@@ -613,6 +627,9 @@ struct FloorDistributionView: View {
             }
         }
         .transition(.opacity.combined(with: .scale(scale: 0.98)))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(nextFloorLoadAccessibilityLabel)
+        .accessibilityAddTraits(.isHeader)
     }
 
     private var nextFloorLoadMessage: String {
@@ -940,6 +957,8 @@ struct FloorDistributionView: View {
         }
         .buttonStyle(ChecklistButtonStyle())
         .disabled(nextUndoneFloor == nil)
+        .accessibilityLabel(nextFloorFocusAccessibilityLabel)
+        .accessibilityHint(nextUndoneFloor == nil ? "" : "Double tap after this floor is delivered.")
     }
 
     private func checklistAction(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {

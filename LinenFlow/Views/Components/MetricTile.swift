@@ -12,6 +12,13 @@ struct MetricTile: View {
 
     private var isInteractive: Bool { explanation != nil }
 
+    private var accessibilityLabelText: String {
+        var parts = ["\(label), \(value)"]
+        if let secondary { parts.append(secondary) }
+        if isExplanationVisible, let explanation { parts.append(explanation) }
+        return parts.joined(separator: ", ")
+    }
+
     var body: some View {
         let content = VStack(spacing: 4) {
             HStack {
@@ -70,9 +77,12 @@ struct MetricTile: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(accessibilityLabelText)
             .accessibilityHint(isExplanationVisible ? "Double tap to hide explanation." : "Double tap to show explanation.")
         } else {
             content
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(accessibilityLabelText)
         }
     }
 
