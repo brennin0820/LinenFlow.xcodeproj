@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Banana.HimmerFlow</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>himmerflow</string>
+			</array>
+		</dict>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>HimmerFlow uses your location to detect when you leave home and arrive at work, so it can adjust your reminders automatically.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>HimmerFlow needs background location access to detect when you leave home and arrive at work, even when the app is closed. This powers automatic departure and arrival detection for your shift reminders.</string>
+</dict>
+</plist>

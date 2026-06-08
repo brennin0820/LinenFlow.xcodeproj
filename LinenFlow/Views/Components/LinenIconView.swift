@@ -22,8 +22,4 @@ extension LinenIconView {
     init(status: CalculationStatus, weight: Font.Weight = .regular) {
         self.init(systemName: LinenIconLibrary.symbolName(forStatus: status), weight: weight)
     }
-    
-    init(step: FlowStep, weight: Font.Weight = .regular) {
-        self.init(systemName: LinenIconLibrary.symbolName(forWorkflowStep: step), weight: weight)
-    }
 }

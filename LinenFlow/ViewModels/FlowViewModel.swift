@@ -73,6 +73,8 @@ final class FlowViewModel {
     private(set) var supplyPredictions: [ItemSupplyPrediction] = []
     private(set) var supplyAnomalies: [SupplyAnomaly] = []
     private let shiftIntelligence = ShiftIntelligenceService()
+    private let floorSensingService = FloorSensingService()
+    private(set) var floorSensingState: FloorSensingState?
     private(set) var isDemoDay: Bool = false
     private(set) var saveError: String?
     private(set) var currentDeliveryItemName: String?
@@ -462,6 +464,7 @@ final class FlowViewModel {
         )
         currentDeliveryItemName = deliverySessionState.currentItemName
         syncDeliverySessionState(startActivity: true)
+        refreshFloorSensing()
     }
 
     func pauseDeliverySession() {
@@ -470,6 +473,7 @@ final class FlowViewModel {
         deliverySessionState.isPaused = true
         deliverySessionState.pausedAt = .now
         syncDeliverySessionState()
+        stopFloorSensing()
     }
 
     func resumeDeliverySession() {
@@ -478,6 +482,7 @@ final class FlowViewModel {
         deliverySessionState.isPaused = false
         deliverySessionState.pausedAt = nil
         syncDeliverySessionState(startActivity: true)
+        refreshFloorSensing()
     }
 
     func finishDeliverySession() {
@@ -487,6 +492,55 @@ final class FlowViewModel {
         deliverySessionState.isPaused = false
         deliverySessionState.finishedAt = .now
         syncDeliverySessionState(endActivity: true)
+        stopFloorSensing()
+    }
+
+    func refreshFloorSensing() {
+        guard deliverySessionState.isActive, !deliverySessionState.isPaused else {
+            stopFloorSensing()
+            return
+        }
+        guard let tower = selectedTower else {
+            stopFloorSensing()
+            return
+        }
+
+        let floors = deliverySessionState.deliveryFloors
+        guard !floors.isEmpty else {
+            stopFloorSensing()
+            return
+        }
+
+        let startFloor = nextUndoneDeliveryFloor ?? floors.first ?? 1
+        floorSensingService.start(
+            tower: tower,
+            deliveryFloors: floors,
+            startFloor: startFloor,
+            onUpdate: { [weak self] state in
+                self?.floorSensingState = state
+            }
+        )
+    }
+
+    func stopFloorSensing() {
+        floorSensingService.stop()
+        floorSensingState = nil
+    }
+
+    func correctFloorSensing(to floor: Int) {
+        guard let tower = selectedTower else { return }
+        let floors = deliverySessionState.deliveryFloors
+        guard !floors.isEmpty else { return }
+
+        floorSensingService.correctFloor(
+            to: floor,
+            tower: tower,
+            deliveryFloors: floors,
+            currentRelativeAltitudeMeters: floorSensingState?.currentRelativeAltitudeMeters,
+            onUpdate: { [weak self] state in
+                self?.floorSensingState = state
+            }
+        )
     }
 
     func markFloorComplete(_ floorNumber: Int) {
@@ -1195,6 +1249,7 @@ final class FlowViewModel {
         notes = ""
         isDemoDay = false
         supplyAnomalies = []
+        stopFloorSensing()
         LiveActivityManager.endDeliveryActivity(state: deliverySessionState)
         recalculate()
     }
@@ -1228,6 +1283,7 @@ final class FlowViewModel {
         notes = ""
         validationWarnings = []
         isDemoDay = false
+        stopFloorSensing()
         LiveActivityManager.endDeliveryActivity(state: deliverySessionState)
         syncWidgetState()
     }
@@ -1392,6 +1448,7 @@ final class FlowViewModel {
         )
         state.currentTripTotalBundles = bundleProgress.total > 0 ? bundleProgress.total : nil
         state.currentTripRemainingBundles = bundleProgress.total > 0 ? bundleProgress.remaining : nil
+        state.pinnedItemSummaries = widgetPinnedItemSummaries(for: resolvedPinned)
 
         SharedWidgetStateManager.save(state)
         WidgetCenter.shared.reloadTimelines(ofKind: Self.widgetKind)
@@ -1619,6 +1676,7 @@ final class FlowViewModel {
         let stateSnapshot = deliverySessionState
         deliverySessionState = DeliverySessionState()
         currentDeliveryItemName = nil
+        stopFloorSensing()
         LiveActivityManager.endDeliveryActivity(state: stateSnapshot)
     }
 
@@ -1629,5 +1687,27 @@ final class FlowViewModel {
             itemName: itemName,
             unitIsBundles: deliveryUnitIsBundles
         )
+    }
+
+    private func widgetPinnedItemSummaries(for itemNames: [String]) -> [WidgetPinnedItemSummary]? {
+        guard !itemNames.isEmpty else { return nil }
+        let summariesByName = Dictionary(uniqueKeysWithValues: calculationSummaries.map { ($0.itemName, $0) })
+        let pinned = itemNames.prefix(3).compactMap { name -> WidgetPinnedItemSummary? in
+            guard let summary = summariesByName[name] else { return nil }
+            let statusLabel: String
+            switch summary.status {
+            case .shortage: statusLabel = "Short"
+            case .overage: statusLabel = "Over"
+            case .exact: statusLabel = "Exact"
+            }
+            return WidgetPinnedItemSummary(
+                itemName: summary.itemName,
+                bundles: summary.deliverableBundles,
+                pieces: summary.receivedPieces,
+                loosePieces: summary.loosePieces,
+                statusLabel: statusLabel
+            )
+        }
+        return pinned.isEmpty ? nil : pinned
     }
 }

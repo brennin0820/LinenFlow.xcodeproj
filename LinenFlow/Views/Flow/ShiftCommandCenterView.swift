@@ -36,9 +36,19 @@ struct ShiftCommandCenterView: View {
                             }
                             tripItemSelectorCard
                             completedFloorControls
+                            if viewModel.deliverySessionState.isActive, let floorState = viewModel.floorSensingState {
+                                FloorDetectionCard(
+                                    state: floorState,
+                                    deliveryFloors: floorNumbers,
+                                    onCorrectFloor: { floor in
+                                        viewModel.correctFloorSensing(to: floor)
+                                    }
+                                )
+                            }
                             FloorChecklistView(
                                 floorNumbers: floorNumbers,
                                 completedFloorNumbers: deliveredFloorNumbers,
+                                sensedFloorNumber: viewModel.floorSensingState?.estimatedFloor,
                                 bundlesPerFloor: bundlesPerFloor,
                                 itemParsByFloor: selectedItemParsByFloor,
                                 onToggleFloor: { floor in
@@ -74,6 +84,14 @@ struct ShiftCommandCenterView: View {
         }
         .onChange(of: floorSignature) { _, _ in
             completedTripSequences = []
+        }
+        .onAppear {
+            if viewModel.deliverySessionState.isActive, !viewModel.deliverySessionState.isPaused {
+                viewModel.refreshFloorSensing()
+            }
+        }
+        .onDisappear {
+            viewModel.stopFloorSensing()
         }
     }
 

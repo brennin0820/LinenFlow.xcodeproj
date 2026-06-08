@@ -57,7 +57,7 @@ struct KeyboardEditingPlaceholder: View {
     @Environment(AppThemeSettings.self) private var theme
 
     var body: some View {
-        PremiumCard(accentColor: accentColor, style: .standard) {
+        PremiumCard(accentColor: accentColor, style: .standard, isCurrent: true) {
             HStack(spacing: 10) {
                 LinenItemIcon(itemName: itemName, size: 32, boxed: true)
                 VStack(alignment: .leading, spacing: 2) {
@@ -78,10 +78,6 @@ struct KeyboardEditingPlaceholder: View {
                     .font(.body.weight(.semibold))
                     .foregroundStyle(accentColor.opacity(0.75))
             }
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous)
-                .stroke(accentColor.opacity(0.32), lineWidth: 1.5)
         }
         .opacity(0.58)
         .allowsHitTesting(false)

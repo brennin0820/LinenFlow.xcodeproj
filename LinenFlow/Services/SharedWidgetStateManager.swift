@@ -6,10 +6,36 @@ private let widgetStateLogger = Logger(
     category: "widget"
 )
 
+/// Shared shift Live Activity snapshot for the app group (widget extension + background rehydration).
+struct ShiftLiveActivitySharedState: Codable, Equatable {
+    var shiftName: String
+    var clockInTime: Date?
+    var currentPhaseRawValue: Int
+    var nextActionLabel: String
+    var nextActionTime: Date?
+    var progressFraction: Double
+    var statusEmoji: String
+    var lastUpdated: Date
+
+    static func from(content: ShiftActivityContent) -> ShiftLiveActivitySharedState {
+        ShiftLiveActivitySharedState(
+            shiftName: content.shiftName,
+            clockInTime: content.clockInTime,
+            currentPhaseRawValue: content.currentPhase.rawValue,
+            nextActionLabel: content.nextActionLabel,
+            nextActionTime: content.nextActionTime,
+            progressFraction: content.progressFraction,
+            statusEmoji: content.statusEmoji,
+            lastUpdated: .now
+        )
+    }
+}
+
 enum SharedWidgetStateManager {
     static let appGroupID = "group.com.himmerflow.shared"
     static let legacyAppGroupID = "group.com.linenflow.shared"
     static let widgetStateKey = "himmerflow.widgetState"
+    static let shiftLiveActivityStateKey = "himmerflow.shiftLiveActivityState"
     private static let legacyWidgetStateKeys = ["linenflow.widgetState", "com.linenflow.widgetState"]
     private static let migrationCompletedKey = "himmerflow.migratedFromLinenFlow"
 
@@ -37,6 +63,22 @@ enum SharedWidgetStateManager {
 
     static func clear() {
         defaults.removeObject(forKey: widgetStateKey)
+    }
+
+    static func loadShiftLiveActivityState() -> ShiftLiveActivitySharedState? {
+        guard let data = defaults.data(forKey: shiftLiveActivityStateKey) else { return nil }
+        return try? JSONDecoder().decode(ShiftLiveActivitySharedState.self, from: data)
+    }
+
+    static func saveShiftLiveActivityState(_ state: ShiftLiveActivitySharedState) {
+        guard let data = try? JSONEncoder().encode(state) else { return }
+        defaults.set(data, forKey: shiftLiveActivityStateKey)
+        defaults.synchronize()
+        widgetStateLogger.debug("Saved shift live activity shared state")
+    }
+
+    static func clearShiftLiveActivityState() {
+        defaults.removeObject(forKey: shiftLiveActivityStateKey)
     }
 
     static func defaultState() -> SharedWidgetState {

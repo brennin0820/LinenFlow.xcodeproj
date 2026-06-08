@@ -156,6 +156,11 @@ struct HimmerFlow_WidgetEntryView: View {
         state.floorCount > 0 && state.remainingFloors == 0 && state.completedFloors >= state.floorCount
     }
 
+    /// Delivery command board (floor tap-to-complete) vs shift-status pulse (tower, pins, progress).
+    private var shouldShowDeliveryCommandBoard: Bool {
+        hasRouteComplete || hasActiveDelivery
+    }
+
     private var currentFloorAmounts: [WidgetFloorDeliveryAmount] {
         Array((state.currentFloorDeliveryAmounts ?? [])
             .sorted { LinenIconLibrary.itemComesBefore($0.itemName, $1.itemName) }
@@ -181,26 +186,82 @@ struct HimmerFlow_WidgetEntryView: View {
         Group {
             switch family {
             case .systemSmall:
-                deliveryWidget(compact: true)
+                sizedWidget(size: .small)
             case .systemMedium:
-                deliveryWidget(compact: false)
+                sizedWidget(size: .medium)
             case .systemLarge:
-                deliveryWidget(compact: false)
+                sizedWidget(size: .large)
             case .systemExtraLarge:
-                deliveryWidget(compact: false)
+                Group {
+                    if shouldShowDeliveryCommandBoard {
+                        deliveryWidget(compact: false)
+                    } else {
+                        extraLargeWidget
+                    }
+                }
             case .accessoryCircular:
-                deliveryCircularAccessory
+                accessoryCircularContent
             case .accessoryInline:
-                deliveryInlineAccessory
+                accessoryInlineContent
             case .accessoryRectangular:
-                deliveryRectangularAccessory
+                accessoryRectangularContent
             default:
-                deliveryWidget(compact: true)
+                sizedWidget(size: .small)
             }
         }
         .widgetURL(widgetDeepLink)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(widgetAccessibilityLabel)
+        .accessibilityHint(widgetAccessibilityHint)
         .animation(.easeInOut(duration: 0.16), value: displayFloorNumber)
         .animation(.easeInOut(duration: 0.16), value: state.completedFloors)
+    }
+
+    private enum WidgetContentSize {
+        case small, medium, large
+    }
+
+    @ViewBuilder
+    private var accessoryCircularContent: some View {
+        if shouldShowDeliveryCommandBoard {
+            deliveryCircularAccessory
+        } else {
+            circularAccessory
+        }
+    }
+
+    @ViewBuilder
+    private var accessoryInlineContent: some View {
+        if shouldShowDeliveryCommandBoard {
+            deliveryInlineAccessory
+        } else {
+            inlineAccessory
+        }
+    }
+
+    @ViewBuilder
+    private var accessoryRectangularContent: some View {
+        if shouldShowDeliveryCommandBoard {
+            deliveryRectangularAccessory
+        } else {
+            rectangularAccessory
+        }
+    }
+
+    @ViewBuilder
+    private func sizedWidget(size: WidgetContentSize) -> some View {
+        if shouldShowDeliveryCommandBoard {
+            deliveryWidget(compact: size == .small)
+        } else {
+            switch size {
+            case .small:
+                smallWidget
+            case .medium:
+                mediumWidget
+            case .large:
+                largeWidget
+            }
+        }
     }
 
     private func deliveryWidget(compact: Bool) -> some View {
@@ -427,22 +488,43 @@ struct HimmerFlow_WidgetEntryView: View {
     }
 
     private func deliveryEmptyState(compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: compact ? 8 : 12) {
-            Text("No Active Delivery")
+        VStack(alignment: .leading, spacing: compact ? WidgetDesignTokens.Spacing.standard : WidgetDesignTokens.Spacing.content) {
+            if hasTower {
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(accentColor)
+                        .frame(width: 4, height: compact ? 28 : 34)
+                    Text(state.towerName)
+                        .font((compact ? Font.headline : Font.title3).weight(.heavy))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                }
+            }
+            Text(hasTower ? "Ready to Deliver" : "No Active Delivery")
                 .font((compact ? Font.headline : Font.title2).weight(.heavy))
                 .foregroundStyle(.white)
                 .lineLimit(2)
                 .minimumScaleFactor(0.72)
-            Text("Open HimmerFlow")
+            Text(hasTower ? state.statusText : "Open HimmerFlow")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(accentColor)
-            Text("to start a route")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.52))
+                .lineLimit(2)
+                .minimumScaleFactor(0.72)
+            if !hasTower {
+                Text("Choose a tower to begin")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.secondaryText))
+            }
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .linenCommandBackground(accentColor: accentColor, activeColor: accentColor)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            hasTower
+                ? "\(state.towerName), ready to deliver. \(state.statusText)"
+                : "No active delivery. Open HimmerFlow and choose a tower."
+        )
     }
 
     private var deliveryInlineAccessory: some View {
@@ -543,12 +625,18 @@ struct HimmerFlow_WidgetEntryView: View {
                         statusBadge
                     }
 
-                    Text(state.towerName.uppercased())
-                        .font(.headline.weight(.heavy))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 7) {
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(accentColor)
+                            .frame(width: 3, height: 22)
+                        Text(state.towerName.uppercased())
+                            .font(.headline.weight(.heavy))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel("\(state.towerName) tower")
 
                     Spacer(minLength: 0)
 
@@ -581,11 +669,17 @@ struct HimmerFlow_WidgetEntryView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .top, spacing: 10) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(snapshot.towerName) Tower")
-                                .font(.headline.weight(.heavy))
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.76)
+                            HStack(spacing: 7) {
+                                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                    .fill(accentColor)
+                                    .frame(width: 3, height: 24)
+                                Text("\(snapshot.towerName) Tower")
+                                    .font(.headline.weight(.heavy))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.76)
+                            }
+                            .accessibilityLabel("\(snapshot.towerName) tower")
                             Text(snapshot.semanticState.displayName)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(statusColor)
@@ -621,8 +715,8 @@ struct HimmerFlow_WidgetEntryView: View {
                     }
 
                     if currentFloorPlanRows.isEmpty {
-                        if let pinnedSummaries = state.pinnedItemSummaries, !pinnedSummaries.isEmpty {
-                            pinnedItemsPanel(pinnedSummaries, compact: true)
+                        if hasPinnedOrQueuedItems {
+                            pinnedOrQueuedPanel(compact: true)
                         } else {
                             commandDetailRow
                         }
@@ -694,8 +788,8 @@ struct HimmerFlow_WidgetEntryView: View {
                     }
 
                     if currentFloorPlanRows.isEmpty {
-                        if let pinnedSummaries = state.pinnedItemSummaries, !pinnedSummaries.isEmpty {
-                            pinnedItemsPanel(pinnedSummaries, compact: false)
+                        if hasPinnedOrQueuedItems {
+                            pinnedOrQueuedPanel(compact: false)
                         } else {
                             largeEmptyPlanPanel
                         }
@@ -766,7 +860,11 @@ struct HimmerFlow_WidgetEntryView: View {
                     }
 
                     if currentFloorPlanRows.isEmpty {
-                        extraLargeEmptyPlanPanel
+                        if hasPinnedOrQueuedItems {
+                            pinnedOrQueuedPanel(compact: false)
+                        } else {
+                            extraLargeEmptyPlanPanel
+                        }
                     } else {
                         extraLargeFloorPlanPanel
                     }
@@ -1020,12 +1118,26 @@ struct HimmerFlow_WidgetEntryView: View {
         Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
     }
 
+    private var hasPinnedOrQueuedItems: Bool {
+        if let pinned = state.pinnedItemSummaries, !pinned.isEmpty { return true }
+        return !snapshot.currentItemNames.isEmpty
+    }
+
+    @ViewBuilder
+    private func pinnedOrQueuedPanel(compact: Bool) -> some View {
+        if let pinnedSummaries = state.pinnedItemSummaries, !pinnedSummaries.isEmpty {
+            pinnedItemsPanel(pinnedSummaries, compact: compact)
+        } else {
+            queuedItemsPanel(snapshot.currentItemNames, compact: compact)
+        }
+    }
+
     private func pinnedItemsPanel(_ items: [WidgetPinnedItemSummary], compact: Bool) -> some View {
-        VStack(alignment: .leading, spacing: compact ? 6 : 8) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: compact ? WidgetDesignTokens.Spacing.compact : WidgetDesignTokens.Spacing.standard) {
+            HStack(spacing: WidgetDesignTokens.Spacing.compact) {
                 Image(systemName: "pin.fill")
                     .font(.caption2.weight(.bold))
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(accentColor)
                 Text("Pinned Items")
                     .font(compact ? .caption2.weight(.heavy) : .caption.weight(.heavy))
                     .foregroundStyle(.white)
@@ -1033,20 +1145,21 @@ struct HimmerFlow_WidgetEntryView: View {
                 Spacer()
                 Text("\(items.count)/3")
                     .font(.caption2.weight(.heavy).monospacedDigit())
-                    .foregroundStyle(.cyan)
+                    .foregroundStyle(accentColor)
             }
 
             ForEach(Array(items.prefix(3)), id: \.itemName) { item in
                 HStack(spacing: compact ? 6 : 8) {
+                    itemInitialBadge(itemName: item.itemName, compact: compact)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(item.itemName)
                             .font(compact ? .caption2.weight(.semibold) : .caption.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.86))
+                            .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.primaryText))
                             .lineLimit(1)
                             .minimumScaleFactor(0.72)
                         Text("\(item.pieces) pcs · \(item.loosePieces) loose")
                             .font(.caption2.weight(.medium).monospacedDigit())
-                            .foregroundStyle(.white.opacity(0.48))
+                            .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.tertiaryText))
                             .lineLimit(1)
                     }
                     Spacer(minLength: 4)
@@ -1055,7 +1168,7 @@ struct HimmerFlow_WidgetEntryView: View {
                         .foregroundStyle(.white)
                     Text("bdl")
                         .font(.caption2.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.48))
+                        .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.tertiaryText))
                     Text(item.statusLabel)
                         .font(.caption2.weight(.heavy))
                         .foregroundStyle(statusLabelColor(item.statusLabel))
@@ -1065,7 +1178,7 @@ struct HimmerFlow_WidgetEntryView: View {
                 }
                 .padding(.vertical, compact ? 4 : 6)
                 .padding(.horizontal, compact ? 6 : 8)
-                .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: HimmerFlowWidgetDesignSystem.Radius.compact, style: .continuous))
+                .background(Color.white.opacity(WidgetDesignTokens.Opacity.surface), in: RoundedRectangle(cornerRadius: HimmerFlowWidgetDesignSystem.Radius.compact, style: .continuous))
             }
         }
         .padding(compact ? 8 : 10)
@@ -1075,8 +1188,61 @@ struct HimmerFlow_WidgetEntryView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: HimmerFlowWidgetDesignSystem.Radius.compact, style: .continuous)
-                .stroke(Color.cyan.opacity(0.18), lineWidth: 1)
+                .stroke(accentColor.opacity(0.22), lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(pinnedItemsAccessibilityLabel(items))
+    }
+
+    private func queuedItemsPanel(_ itemNames: [String], compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: compact ? WidgetDesignTokens.Spacing.compact : WidgetDesignTokens.Spacing.standard) {
+            HStack(spacing: WidgetDesignTokens.Spacing.compact) {
+                Image(systemName: "list.bullet.rectangle.fill")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(accentColor)
+                Text("Queued Items")
+                    .font(compact ? .caption2.weight(.heavy) : .caption.weight(.heavy))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                Spacer()
+                Text("\(min(itemNames.count, 3))")
+                    .font(.caption2.weight(.heavy).monospacedDigit())
+                    .foregroundStyle(accentColor)
+            }
+
+            ForEach(Array(itemNames.prefix(3)), id: \.self) { name in
+                HStack(spacing: compact ? 6 : 8) {
+                    itemInitialBadge(itemName: name, compact: compact)
+                    Text(name)
+                        .font(compact ? .caption2.weight(.semibold) : .caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.primaryText))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, compact ? 4 : 6)
+                .padding(.horizontal, compact ? 6 : 8)
+                .background(Color.white.opacity(WidgetDesignTokens.Opacity.surface), in: RoundedRectangle(cornerRadius: HimmerFlowWidgetDesignSystem.Radius.compact, style: .continuous))
+            }
+        }
+        .padding(compact ? 8 : 10)
+        .background(
+            Color.white.opacity(0.055),
+            in: RoundedRectangle(cornerRadius: HimmerFlowWidgetDesignSystem.Radius.compact, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: HimmerFlowWidgetDesignSystem.Radius.compact, style: .continuous)
+                .stroke(accentColor.opacity(0.18), lineWidth: 1)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Queued items: \(itemNames.prefix(3).joined(separator: ", "))")
+    }
+
+    private func pinnedItemsAccessibilityLabel(_ items: [WidgetPinnedItemSummary]) -> String {
+        let summaries = items.prefix(3).map { item in
+            "\(item.itemName), \(item.bundles) bundles, \(item.statusLabel)"
+        }
+        return "Pinned items: \(summaries.joined(separator: "; "))"
     }
 
     private func statusLabelColor(_ label: String) -> Color {
@@ -1247,12 +1413,40 @@ struct HimmerFlow_WidgetEntryView: View {
         var components = URLComponents()
         components.scheme = "himmerflow"
         components.host = "widget"
-        components.path = hasTower ? "/delivery" : "/start"
-        components.queryItems = [
-            URLQueryItem(name: "source", value: "widget"),
-            URLQueryItem(name: "tower", value: hasTower ? snapshot.towerName : nil)
-        ]
+        if shouldShowDeliveryCommandBoard || hasTower {
+            components.path = "/delivery"
+            components.queryItems = [
+                URLQueryItem(name: "source", value: "widget"),
+                URLQueryItem(name: "tower", value: snapshot.towerName)
+            ]
+        } else {
+            components.path = "/start"
+            components.queryItems = [URLQueryItem(name: "source", value: "widget")]
+        }
         return components.url
+    }
+
+    private var widgetAccessibilityLabel: String {
+        if shouldShowDeliveryCommandBoard {
+            if hasRouteComplete {
+                return "\(state.towerName) route complete. \(progressText) floors delivered."
+            }
+            if let floor = displayFloorNumber {
+                let items = currentTripItems.isEmpty ? "current trip" : currentTripItems.joined(separator: ", ")
+                return "\(state.towerName) delivery. Floor \(floor). Items: \(items). \(progressText) floors complete."
+            }
+        }
+        if hasTower {
+            return "\(state.towerName) tower. \(snapshot.completedFloors) of \(snapshot.floorCount) floors complete. Status: \(badgeText). \(countdownAccessibilityValue)."
+        }
+        return "HimmerFlow. No tower selected."
+    }
+
+    private var widgetAccessibilityHint: String {
+        if shouldShowDeliveryCommandBoard, hasActiveDelivery {
+            return "Double tap to open delivery command center. Use complete floor action when available."
+        }
+        return "Double tap to open HimmerFlow."
     }
 
     private func roundedCountdownText(compact: Bool) -> String {
@@ -1283,77 +1477,92 @@ struct HimmerFlow_WidgetEntryView: View {
     }
 
     private var emptySmall: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: WidgetDesignTokens.Spacing.standard) {
             HStack {
-                Image(systemName: "building.2.crop.circle")
+                Image(systemName: "building.2.crop.circle.fill")
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(statusColor)
+                    .foregroundStyle(WidgetDesignTokens.ColorToken.defaultAccent)
                 Spacer()
                 statusBadge
             }
             Spacer()
-            Text("Open HimmerFlow")
+            Text("HimmerFlow")
                 .font(.headline.weight(.heavy))
                 .foregroundStyle(.white)
-                .lineLimit(2)
-            Text("Start a tower delivery")
+                .lineLimit(1)
+            Text("Choose a tower in the app")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.58))
+                .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.secondaryText))
                 .lineLimit(2)
             Spacer(minLength: 0)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("HimmerFlow. No tower selected. Open the app to choose a tower.")
     }
 
     private var emptyMedium: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        VStack(alignment: .leading, spacing: WidgetDesignTokens.Spacing.standard) {
+            HStack(spacing: 8) {
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(WidgetDesignTokens.ColorToken.defaultAccent)
+                    .frame(width: 4, height: 32)
                 Text("HimmerFlow")
                     .font(.title3.weight(.heavy))
                     .foregroundStyle(.white)
                 Spacer()
-                Image(systemName: "building.2.crop.circle")
+                Image(systemName: "building.2.crop.circle.fill")
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(statusColor)
+                    .foregroundStyle(WidgetDesignTokens.ColorToken.defaultAccent)
             }
             Spacer(minLength: 0)
-            Text("No active delivery session")
+            Text("No tower selected")
                 .font(.headline.weight(.bold))
-                .foregroundStyle(.white.opacity(0.88))
+                .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.primaryText))
                 .lineLimit(1)
-            Text("Open app to begin")
+            Text("Open HimmerFlow, pick your tower, and pin items for this widget.")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.58))
+                .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.secondaryText))
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
             Spacer(minLength: 0)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("HimmerFlow. No tower selected. Open the app to pick a tower and pin items.")
     }
 
     private var emptyLarge: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
+        VStack(alignment: .leading, spacing: WidgetDesignTokens.Spacing.content) {
+            HStack(spacing: 10) {
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(WidgetDesignTokens.ColorToken.defaultAccent)
+                    .frame(width: 4, height: 40)
                 Text("HimmerFlow")
                     .font(.title2.weight(.heavy))
                     .foregroundStyle(.white)
                 Spacer()
-                Image(systemName: "building.2.crop.circle")
+                Image(systemName: "building.2.crop.circle.fill")
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(statusColor)
+                    .foregroundStyle(WidgetDesignTokens.ColorToken.defaultAccent)
             }
 
             Spacer(minLength: 0)
 
-            VStack(alignment: .leading, spacing: 5) {
-                Text("No active delivery session")
+            VStack(alignment: .leading, spacing: 6) {
+                Text("No tower selected")
                     .font(.title3.weight(.heavy))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.primaryText))
                     .lineLimit(1)
-                Text("Open HimmerFlow, choose a tower, then start delivery to fill this command board.")
+                Text("Open HimmerFlow, choose a tower, then start delivery to fill this command board with live floor progress and pinned item counts.")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.60))
-                    .lineLimit(2)
+                    .foregroundStyle(.white.opacity(WidgetDesignTokens.Opacity.secondaryText))
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.85)
             }
 
             Spacer(minLength: 0)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("HimmerFlow command board. No tower selected. Open the app to choose a tower and start delivery.")
     }
 
     private func progressRing(size: CGFloat, lineWidth: CGFloat, centerFont: Font) -> some View {
@@ -1431,20 +1640,10 @@ private extension View {
             .padding()
             .containerBackground(for: .widget) {
                 ZStack {
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.035, green: 0.043, blue: 0.052),
-                            Color(red: 0.060, green: 0.070, blue: 0.082),
-                            Color(red: 0.028, green: 0.033, blue: 0.040)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    LinearGradient(
-                        colors: [accentColor.opacity(0.24), .clear, activeColor.opacity(0.14)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    WidgetDesignTokens.surfaceGradient(accent: accentColor, active: activeColor)
+                    RoundedRectangle(cornerRadius: WidgetDesignTokens.Radius.surface, style: .continuous)
+                        .strokeBorder(.white.opacity(WidgetDesignTokens.Opacity.stroke), lineWidth: 0.5)
+                        .padding(1)
                 }
             }
     }

@@ -4,6 +4,15 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>HimmerFlow uses your location to detect when you leave home and arrive at work, so it can adjust your reminders automatically.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>HimmerFlow needs background location access to detect when you leave home and arrive at work, even when the app is closed. This powers automatic departure and arrival detection for your shift reminders.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

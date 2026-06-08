@@ -61,6 +61,20 @@
 			);
 			target = 629AA09D2FBFC76B0077750C /* HimmerFlow WidgetExtension */;
 		};
+		62B430BA2FB9670C000654DB /* Exceptions for "LinenFlow" folder in "HimmerFlow" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				LiveActivity/ShiftActivityWidget.swift,
+				Views/Flow/Legacy/FlowStep.swift,
+				Views/Flow/Legacy/ReceivingView.swift,
+				Views/Flow/Legacy/ReviewReceivedView.swift,
+				Views/Flow/Legacy/ResultsView.swift,
+				Views/Flow/Legacy/FloorDistributionView.swift,
+				Views/Flow/Legacy/RebalanceShortFloorsView.swift,
+			);
+			target = 62B430B52FB9670C000654DB /* HimmerFlow */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -74,6 +88,9 @@
 		};
 		62B430B82FB9670C000654DB /* LinenFlow */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				62B430BA2FB9670C000654DB /* Exceptions for "LinenFlow" folder in "HimmerFlow" target */,
+			);
 			path = LinenFlow;
 			sourceTree = "<group>";
 		};
@@ -531,11 +548,14 @@
 				DEVELOPMENT_TEAM = Y7UUXVS2J4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = LinenFlowURLTypes.plist;
+				INFOPLIST_FILE = LinenFlow/Info.plist;
 				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = HimmerFlow;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "HimmerFlow needs background location access to detect when you leave home and arrive at work, even when the app is closed. This powers automatic departure and arrival detection for your shift reminders.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "HimmerFlow uses your location to detect when you leave home and arrive at work, so it can adjust your reminders automatically.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "location fetch";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -574,11 +594,14 @@
 				DEVELOPMENT_TEAM = Y7UUXVS2J4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = LinenFlowURLTypes.plist;
+				INFOPLIST_FILE = LinenFlow/Info.plist;
 				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = HimmerFlow;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "HimmerFlow needs background location access to detect when you leave home and arrive at work, even when the app is closed. This powers automatic departure and arrival detection for your shift reminders.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "HimmerFlow uses your location to detect when you leave home and arrive at work, so it can adjust your reminders automatically.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "location fetch";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

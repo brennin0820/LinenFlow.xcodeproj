@@ -13,5 +13,6 @@ struct HimmerFlow_WidgetBundle: WidgetBundle {
     var body: some Widget {
         HimmerFlow_Widget()
         HimmerFlow_WidgetLiveActivity()
+        ShiftActivityWidget()
     }
 }

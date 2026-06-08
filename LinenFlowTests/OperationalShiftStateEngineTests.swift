@@ -152,8 +152,8 @@ struct OperationalShiftStateEngineTests {
         #expect(OperationalShiftStateEngine.compactTowerName("Grand Waikikian") == "GW")
     }
 
-    @Test("Empty tower name returns LF fallback")
+    @Test("Empty tower name returns HF fallback")
     func compactEmptyName() {
-        #expect(OperationalShiftStateEngine.compactTowerName("") == "LF")
+        #expect(OperationalShiftStateEngine.compactTowerName("") == "HF")
     }
 }

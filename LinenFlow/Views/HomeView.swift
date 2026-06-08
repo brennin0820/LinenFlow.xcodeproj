@@ -1,14 +1,6 @@
 import SwiftUI
 import SwiftData
 
-enum FlowStep: Hashable {
-    case receiving
-    case review
-    case results
-    case floorPlan
-    case rebalance(itemName: String?)
-}
-
 struct HomeView: View {
     @Environment(FlowViewModel.self) private var viewModel
     @Environment(WidgetDeepLinkCoordinator.self) private var deepLinkCoordinator
@@ -23,15 +15,16 @@ struct HomeView: View {
     @State private var itemPickerExpanded = false
     @State private var draftSelectedItemIDs: Set<UUID> = []
     @State private var showClearConfirmation = false
-    @State private var flowPath = NavigationPath()
     @State private var focusedItemID: UUID?
     @State private var freshEditingItemID: UUID?
     @State private var focusRequest = 0
     @State private var focusReleaseRequest = 0
     @State private var showDeliveryCommandCenter = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        NavigationStack(path: $flowPath) {
+        NavigationStack {
             AppBackground(accentColor: selectedTowerColor) {
                 ScrollView { flowContent }
                     .scrollDismissesKeyboard(.interactively)
@@ -46,24 +39,10 @@ struct HomeView: View {
                     itemEditingKeyboardBar
                 }
             }
-            .navigationDestination(for: FlowStep.self) { step in
-                switch step {
-                case .receiving:
-                    ReceivingView(path: $flowPath)
-                case .review:
-                    ReviewReceivedView(path: $flowPath)
-                case .results:
-                    ResultsView(path: $flowPath)
-                case .floorPlan:
-                    FloorDistributionView(path: $flowPath)
-                case .rebalance(let itemName):
-                    RebalanceShortFloorsView(preselectedItemName: itemName)
-                }
-            }
             .navigationDestination(isPresented: $showDeliveryCommandCenter) {
                 ShiftCommandCenterView()
             }
-            .animation(.easeInOut(duration: 0.5), value: viewModel.selectedTower?.identityColorHex)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: viewModel.selectedTower?.identityColorHex)
             .onAppear {
                 viewModel.refreshAvailable()
                 resetDraftSelectedItems()
@@ -142,7 +121,7 @@ struct HomeView: View {
         .padding(.top, 10)
         .opacity(hasAppeared ? 1 : 0)
         .offset(y: hasAppeared ? 0 : 12)
-        .animation(.snappy(duration: 0.35), value: hasAppeared)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.35), value: hasAppeared)
         .confirmationDialog("Clear received entries?", isPresented: $showClearConfirmation, titleVisibility: .visible) {
             Button("Clear Entries", role: .destructive) {
                 savedConfirmation = nil
@@ -320,9 +299,15 @@ struct HomeView: View {
     }
 
     private var slimSummaryContent: some View {
-        ViewThatFits(in: .horizontal) {
-            slimSummaryInline
-            slimSummaryStacked
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                slimSummaryStacked
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    slimSummaryInline
+                    slimSummaryStacked
+                }
+            }
         }
     }
 
@@ -404,6 +389,7 @@ struct HomeView: View {
                 .foregroundStyle(tint.opacity(0.9))
         }
         .lineLimit(1)
+        .minimumScaleFactor(0.75)
     }
 
     private var liveIndicator: some View {
@@ -457,7 +443,7 @@ struct HomeView: View {
     }
 
     private func finishTowerPickerCollapse() {
-        withAnimation(.snappy(duration: 0.28)) {
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.28)) {
             towerPickerExpanded = false
             mapFocusTowerID = nil
         }
@@ -493,7 +479,7 @@ struct HomeView: View {
                 }
             } trailing: {
                 Button {
-                    withAnimation(.snappy(duration: 0.28)) {
+                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.28)) {
                         towerPickerExpanded = true
                         mapFocusTowerID = nil
                     }
@@ -505,6 +491,8 @@ struct HomeView: View {
                         .padding(.vertical, 8)
                         .background(color.opacity(0.75), in: Capsule())
                 }
+                .accessibilityLabel("Change tower")
+                .accessibilityHint("Opens the tower picker.")
             }
         }
     }
@@ -523,12 +511,14 @@ struct HomeView: View {
                         }
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.7))
+                        .accessibilityLabel("Done selecting tower")
+                        .accessibilityHint("Collapses the tower picker.")
                     }
                 }
 
                 if showsTowerEnvironmentMap {
                     towerEnvironmentSection
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)))
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -557,7 +547,7 @@ struct HomeView: View {
                     activeFloorControl(tower)
                 }
             }
-            .animation(.snappy(duration: 0.28), value: showsTowerEnvironmentMap)
+            .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: showsTowerEnvironmentMap)
         }
     }
 
@@ -698,7 +688,7 @@ struct HomeView: View {
                         Spacer()
 
                         Button {
-                            withAnimation(.snappy(duration: 0.24)) {
+                            withAnimation(reduceMotion ? nil : .snappy(duration: 0.24)) {
                                 itemPickerExpanded.toggle()
                             }
                         } label: {
@@ -901,12 +891,6 @@ struct HomeView: View {
         .id(item.id)
         .opacity(isLockedElsewhere ? 0.42 : 1)
         .allowsHitTesting(!isLockedElsewhere)
-        .overlay {
-            if isFocused {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(LinenIconLibrary.color(forItem: item.name).opacity(0.55), lineWidth: 2)
-            }
-        }
         .accessibilityLabel(linenCardAccessibilityLabel(item: item, isFocused: isFocused, isLockedElsewhere: isLockedElsewhere))
         .accessibilityAddTraits(isFocused ? .isSelected : [])
     }
@@ -1172,6 +1156,7 @@ private struct EquatableLinenListCard: View, Equatable {
             focusRequest: focusRequest,
             focusReleaseRequest: focusReleaseRequest,
             isCompactPinned: false,
+            isFocused: isFocused,
             onEditRequested: onEditRequested,
             onFocusChange: onFocusChange
         ) { pieces in

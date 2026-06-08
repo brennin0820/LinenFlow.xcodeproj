@@ -62,10 +62,12 @@ LinenFlow/
     │   ├── ShiftTabView.swift          # pace, today plan, commute, alarms, weekly schedule
     │   ├── LogsTabView.swift
     │   └── SettingsTabView.swift
-    ├── Flow/                           # receiving, review, results, floor plan, rebalance (via FlowStep navigation)
+    ├── Flow/                           # one-screen cards + delivery command center
     │   ├── OneScreenLinenItemCard.swift  # interactive per-item card (receive + summary + distribution)
-    │   ├── ReceivingView.swift, ReviewReceivedView.swift, ResultsView.swift, FloorDistributionView.swift
-    │   ├── ShiftCommandCenterView.swift, FloorChecklistView.swift, RebalanceShortFloorsView.swift
+    │   ├── ShiftCommandCenterView.swift, FloorChecklistView.swift
+    │   ├── Legacy/                     # archived multi-step wizard (excluded from app target)
+    │   │   ├── FlowStep.swift, ReceivingView.swift, ReviewReceivedView.swift
+    │   │   ├── ResultsView.swift, FloorDistributionView.swift, RebalanceShortFloorsView.swift
     │   └── …
     ├── Components/
     │   ├── FlowProgressHeader.swift    # receive → review → results → floorPlan (no tower step)
@@ -105,7 +107,7 @@ Source file count: **151 Swift files in app target**, **19 Swift files in test t
 
 | Tab | Root view | Purpose |
 |-----|-----------|---------|
-| Linen | `HomeView` | Inline tower picker, one-screen `OneScreenLinenItemCard` grid; full-screen wizard via `FlowStep` navigation (no `TowerSelectionView` entry) |
+| Linen | `HomeView` | Inline tower picker, one-screen `OneScreenLinenItemCard` grid; opens `ShiftCommandCenterView` for delivery command |
 | Shift | `ShiftTabView` | Shift timing, pace tracker, today plan, commute, alarms, leaving checklist, weekly schedule |
 | Insights | `InsightsView` | Delivery analytics and reporting |
 | Logs | `LogsTabView` → `LogsView` | SwiftData daily log history |
@@ -122,8 +124,8 @@ Source file count: **151 Swift files in app target**, **19 Swift files in test t
 
 - **`HomeView`** is the single Linen-tab screen: an inline expandable tower picker, item selection, and a grid of **`OneScreenLinenItemCard`** views that combine receiving input, calculation summary, and per-floor distribution per linen item.
 - Cards support piece/bundle entry, background style selection (`LinenCardBackground`), and inline updates via `FlowViewModel.addOrUpdateReceivedPieces`.
-- The multi-step wizard (`ReceivingView`, `ReviewReceivedView`, `ResultsView`, `FloorDistributionView`, `RebalanceShortFloorsView`) remains reachable via `FlowStep` `navigationDestination` — there is no `TowerSelectionView` route.
-- **`FlowProgressHeader`** on wizard screens shows four steps — receive, review, results, floorPlan — with no tower step.
+- The multi-step wizard (`ReceivingView`, `ReviewReceivedView`, `ResultsView`, `FloorDistributionView`, `RebalanceShortFloorsView`) was archived to `Views/Flow/Legacy/` and **excluded from the app target** (2026-06-08). The one-screen `HomeView` flow is the sole production linen path.
+- **`FlowProgressHeader`** remains in Components for reference; it was used by the archived wizard screens.
 
 ## Build and test commands
 

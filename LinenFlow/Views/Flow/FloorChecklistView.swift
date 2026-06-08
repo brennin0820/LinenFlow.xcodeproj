@@ -13,6 +13,7 @@ struct DeliveryChecklistItemPar: Identifiable, Hashable {
 struct FloorChecklistView: View {
     let floorNumbers: [Int]
     let completedFloorNumbers: Set<Int>
+    var sensedFloorNumber: Int? = nil
     var bundlesPerFloor: [Int: Int] = [:]
     var itemParsByFloor: [Int: [DeliveryChecklistItemPar]] = [:]
     let onToggleFloor: (Int) -> Void
@@ -144,6 +145,7 @@ struct FloorChecklistView: View {
         let totalPhases = displayFloorNumbers.count
         let floorBundles = bundlesPerFloor[floor] ?? 0
         let itemPars = displayedItemPars(for: floor)
+        let isSensedFloor = sensedFloorNumber == floor
         return Button {
             advanceStatus(for: floor)
         } label: {
@@ -193,10 +195,10 @@ struct FloorChecklistView: View {
             .frame(minHeight: itemPars.isEmpty ? 64 : 96)
             .padding(.horizontal, 12)
             .padding(.vertical, itemPars.isEmpty ? 8 : 10)
-            .background(fill(for: completion.status), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(fill(for: completion.status, isSensed: isSensedFloor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(stroke(for: completion.status), lineWidth: 1)
+                    .stroke(stroke(for: completion.status, isSensed: isSensedFloor), lineWidth: isSensedFloor ? 2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -204,7 +206,7 @@ struct FloorChecklistView: View {
             Button("Delivered") { setStatus(.delivered, for: floor) }
             Button("Pending") { setStatus(.pending, for: floor) }
         }
-        .accessibilityLabel("Floor \(floor), phase \(phaseIndex) of \(totalPhases)\(floorBundles > 0 ? ", \(floorBundles) bundles" : ""), \(itemParsAccessibilityLabel(itemPars)), \(label(for: completion.status))")
+        .accessibilityLabel("Floor \(floor), phase \(phaseIndex) of \(totalPhases)\(floorBundles > 0 ? ", \(floorBundles) bundles" : "")\(isSensedFloor ? ", barometer detected" : ""), \(itemParsAccessibilityLabel(itemPars)), \(label(for: completion.status))")
     }
 
     private func displayedItemPars(for floor: Int) -> [DeliveryChecklistItemPar] {
@@ -361,7 +363,10 @@ struct FloorChecklistView: View {
         }
     }
 
-    private func fill(for status: FloorCompletion.Status) -> Color {
+    private func fill(for status: FloorCompletion.Status, isSensed: Bool = false) -> Color {
+        if isSensed, status != .delivered {
+            return Color.cyan.opacity(0.18)
+        }
         switch status {
         case .pending: return Color.white.opacity(0.055)
         case .delivered: return Color.green.opacity(0.26)
@@ -369,7 +374,10 @@ struct FloorChecklistView: View {
         }
     }
 
-    private func stroke(for status: FloorCompletion.Status) -> Color {
+    private func stroke(for status: FloorCompletion.Status, isSensed: Bool = false) -> Color {
+        if isSensed {
+            return Color.cyan.opacity(status == .delivered ? 0.56 : 0.72)
+        }
         switch status {
         case .pending: return Color.white.opacity(0.08)
         case .delivered: return Color.green.opacity(0.44)

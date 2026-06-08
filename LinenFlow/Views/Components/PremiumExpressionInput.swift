@@ -13,9 +13,11 @@ struct PremiumExpressionInput: View {
     var focusReleaseRequest: Int = 0
     var showArithmeticKeys: Bool = false
     var onFocusChange: ((Bool) -> Void)? = nil
+    var onCommit: ((Int) -> Void)? = nil
 
     @State private var liveError: ArithmeticError?
     @FocusState private var isFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
@@ -24,7 +26,9 @@ struct PremiumExpressionInput: View {
                 ArithmeticKeypadStrip { token in
                     appendToken(token)
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(
+                    reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top))
+                )
             }
             statusLine
         }
@@ -69,6 +73,7 @@ struct PremiumExpressionInput: View {
                 }
                 .onSubmit {
                     recompute(expression)
+                    onCommit?(evaluated)
                     isFocused = false
                 }
             if let suffix {

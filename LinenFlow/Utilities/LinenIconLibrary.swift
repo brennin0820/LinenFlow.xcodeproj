@@ -114,17 +114,6 @@ enum LinenIconLibrary {
         }
     }
 
-    // MARK: - Workflow Steps
-    static func symbolName(forWorkflowStep step: FlowStep) -> String {
-        switch step {
-        case .receiving: return "tray.and.arrow.down.fill"
-        case .review: return "list.bullet.clipboard.fill"
-        case .results: return "chart.bar.doc.horizontal.fill"
-        case .floorPlan: return "figure.walk.motion"
-        case .rebalance: return "arrow.triangle.2.circlepath"
-        }
-    }
-
     // MARK: - General UI Concepts
     enum General {
         static let settings = "gearshape.fill"
