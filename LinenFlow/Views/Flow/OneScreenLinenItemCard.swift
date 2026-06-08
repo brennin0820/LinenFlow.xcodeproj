@@ -43,7 +43,6 @@ struct OneScreenLinenItemCard: View {
     var focusReleaseRequest: Int = 0
     var isCompactPinned: Bool = false
     var isFocused: Bool = false
-    var onEditRequested: (() -> Void)? = nil
     var onFocusChange: ((Bool) -> Void)? = nil
 
     @Environment(FlowViewModel.self) private var viewModel
@@ -73,7 +72,6 @@ struct OneScreenLinenItemCard: View {
         focusReleaseRequest: Int = 0,
         isCompactPinned: Bool = false,
         isFocused: Bool = false,
-        onEditRequested: (() -> Void)? = nil,
         onFocusChange: ((Bool) -> Void)? = nil,
         onPiecesChange: @escaping (Int) -> Void
     ) {
@@ -86,7 +84,6 @@ struct OneScreenLinenItemCard: View {
         self.focusReleaseRequest = focusReleaseRequest
         self.isCompactPinned = isCompactPinned
         self.isFocused = isFocused
-        self.onEditRequested = onEditRequested
         self.onFocusChange = onFocusChange
         self.onPiecesChange = onPiecesChange
         let initialPieces = entry?.calculatedPieces ?? 0
@@ -115,23 +112,29 @@ struct OneScreenLinenItemCard: View {
     }
 
     private var expressionInputSection: some View {
-        PremiumExpressionInput(
-            label: "",
-            expression: $expression,
-            evaluated: $pieces,
+        StableLinenExpressionSection(
+            itemID: item.id,
             suffix: bundleConversionLabel,
             focusRequest: focusRequest,
             focusReleaseRequest: focusReleaseRequest,
-            showArithmeticKeys: isCompactPinned,
-            onFocusChange: onFocusChange,
-            onCommit: { announceCommittedPieces($0) }
+            expression: $expression,
+            pieces: $pieces,
+            onFocusChange: { focused in
+                if !focused {
+                    onPiecesChange(pieces)
+                }
+                onFocusChange?(focused)
+            },
+            onCommit: { value in
+                announceCommittedPieces(value)
+                onPiecesChange(value)
+            }
         )
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onEditRequested?()
-        }
+        .equatable()
         .onChange(of: pieces) { oldValue, newValue in
-            guard oldValue != newValue else { return }
+            // While focused, defer VM sync to blur/commit so FlowViewModel updates
+            // don't recreate this subtree and steal TextField focus.
+            guard oldValue != newValue, !isFocused else { return }
             onPiecesChange(newValue)
         }
     }
@@ -139,12 +142,11 @@ struct OneScreenLinenItemCard: View {
     /// Always wrap in `ScrollView` so the expression `TextField` keeps a stable identity
     /// when the keyboard appears and `focusedCardMaxHeight` becomes non-nil.
     private var scrollableCardContent: some View {
-        let isScrollable = isFocused && focusedCardMaxHeight != nil
-        return ScrollView(.vertical, showsIndicators: isScrollable) {
+        ScrollView(.vertical, showsIndicators: false) {
             cardContent
         }
-        .scrollDisabled(!isScrollable)
-        .frame(maxHeight: focusedCardMaxHeight)
+        .scrollDisabled(!(isFocused && focusedCardMaxHeight != nil))
+        .frame(maxHeight: focusedCardMaxHeight ?? .infinity)
     }
 
     var body: some View {
@@ -726,6 +728,40 @@ struct OneScreenLinenItemCard: View {
         case .overage: return .green
         case .exact: return .blue
         }
+    }
+}
+
+/// Isolates the expression `TextField` from `FlowViewModel`-driven parent re-renders.
+/// Equatable ignores live expression/pieces so keystrokes don't rebuild the field.
+private struct StableLinenExpressionSection: View, Equatable {
+    let itemID: UUID
+    let suffix: String
+    let focusRequest: Int
+    let focusReleaseRequest: Int
+    @Binding var expression: String
+    @Binding var pieces: Int
+    var onFocusChange: ((Bool) -> Void)?
+    var onCommit: ((Int) -> Void)?
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.itemID == rhs.itemID
+            && lhs.focusRequest == rhs.focusRequest
+            && lhs.focusReleaseRequest == rhs.focusReleaseRequest
+    }
+
+    var body: some View {
+        PremiumExpressionInput(
+            label: "",
+            expression: $expression,
+            evaluated: $pieces,
+            suffix: suffix,
+            focusRequest: focusRequest,
+            focusReleaseRequest: focusReleaseRequest,
+            showArithmeticKeys: true,
+            onFocusChange: onFocusChange,
+            onCommit: onCommit
+        )
+        .id(itemID)
     }
 }
 

@@ -685,6 +685,7 @@ private struct ItemReceivingCard: View {
                 requestsFocusOnAppear: true,
                 focusRequest: focusRequest,
                 focusReleaseRequest: focusReleaseRequest,
+                showArithmeticKeys: true,
                 onFocusChange: onFocusChange
             )
             .onChange(of: binCount) { _, new in
@@ -700,7 +701,7 @@ private struct ItemReceivingCard: View {
                 requestsFocusOnAppear: true,
                 focusRequest: focusRequest,
                 focusReleaseRequest: focusReleaseRequest,
-                showArithmeticKeys: isCompactPinned,
+                showArithmeticKeys: true,
                 onFocusChange: onFocusChange
             )
             .onChange(of: pieces) { _, new in
@@ -712,7 +713,8 @@ private struct ItemReceivingCard: View {
                     PremiumNumberInput(
                         label: "Physical bins (optional)",
                         value: $physicalBins,
-                        suffix: "bins"
+                        suffix: "bins",
+                        showArithmeticKeys: true
                     )
                     .onChange(of: physicalBins) { _, new in
                         onUpdate(nil, pieces, new > 0 ? new : nil, nil)

@@ -22,39 +22,6 @@ extension EnvironmentValues {
 
 enum KeyboardPinnedEditorMotion {
     static let lift = Animation.spring(response: 0.42, dampingFraction: 0.86)
-    static let dismiss = Animation.spring(response: 0.38, dampingFraction: 0.9)
-    static let crossfade = Animation.snappy(duration: 0.24)
-
-    static var panelLiftTransition: AnyTransition {
-        .asymmetric(
-            insertion: .move(edge: .bottom).combined(with: .opacity),
-            removal: .move(edge: .bottom).combined(with: .opacity)
-        )
-    }
-
-    static var panelCrossfadeTransition: AnyTransition {
-        .opacity
-    }
-
-    static var listCardLiftRemovalTransition: AnyTransition {
-        .opacity
-    }
-
-    static var listCardLiftInsertionTransition: AnyTransition {
-        .opacity
-    }
-
-    static var placeholderLiftInsertionTransition: AnyTransition {
-        .opacity
-    }
-
-    static var placeholderLiftRemovalTransition: AnyTransition {
-        .opacity
-    }
-
-    static var listCrossfadeTransition: AnyTransition {
-        .opacity
-    }
 }
 
 enum KeyboardEditingFocus {
@@ -85,64 +52,6 @@ enum KeyboardEditingHaptics {
     }
 }
 
-struct KeyboardEditingPlaceholder: View {
-    let itemName: String
-    let accentColor: Color
-    @Environment(AppThemeSettings.self) private var theme
-
-    var body: some View {
-        PremiumCard(accentColor: accentColor, style: .standard, isCurrent: true) {
-            HStack(spacing: 10) {
-                LinenItemIcon(itemName: itemName, size: 32, boxed: true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(itemName)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.72))
-                        .lineLimit(1)
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.up")
-                            .font(.caption2.weight(.bold))
-                        Text("editing above")
-                            .font(.caption2.weight(.medium))
-                    }
-                    .foregroundStyle(accentColor.opacity(0.82))
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(accentColor.opacity(0.75))
-            }
-        }
-        .opacity(0.58)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-}
-
-struct KeyboardPinnedPanel<Content: View>: View {
-    let itemName: String
-    let editingIndex: Int
-    let editingTotal: Int
-    var contentTransition: AnyTransition = KeyboardPinnedEditorMotion.panelCrossfadeTransition
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        VStack(spacing: 0) {
-            content()
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 8)
-                .transition(contentTransition)
-        }
-        .background(.ultraThinMaterial)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Editing \(itemName), \(editingIndex + 1) of \(editingTotal)")
-        .transition(KeyboardPinnedEditorMotion.panelLiftTransition)
-    }
-}
-
-/// Absorbs background taps: dismisses the keyboard only — never clears `focusedItemID` or edit mode.
-/// Prefer this over `allowsHitTesting(false)` on dimmed cards, which lets hits fall through to cards behind.
 struct KeyboardEditingTapAbsorber: ViewModifier {
     let isActive: Bool
     var dimmed: Bool = false
@@ -181,10 +90,8 @@ private struct KeyboardBottomInsetObserver: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
                 applyInset(from: notification)
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { notification in
-                withAnimation(keyboardAnimation(from: notification)) {
-                    bottomInset = 0
-                }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                bottomInset = 0
             }
     }
 
@@ -200,19 +107,8 @@ private struct KeyboardBottomInsetObserver: ViewModifier {
 
         let converted = window.convert(frame, from: nil)
         let overlap = max(0, window.bounds.maxY - converted.minY)
-        withAnimation(keyboardAnimation(from: notification)) {
-            bottomInset = overlap
-        }
-        #endif
-    }
-
-    private func keyboardAnimation(from notification: Notification) -> Animation? {
-        if reduceMotion { return nil }
-        #if canImport(UIKit)
-        let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
-        return .easeInOut(duration: duration)
-        #else
-        return KeyboardPinnedEditorMotion.lift
+        // Avoid animating scroll padding with the keyboard — animated layout shifts resign the TextField.
+        bottomInset = overlap
         #endif
     }
 }

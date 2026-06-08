@@ -19,10 +19,19 @@ struct PremiumExpressionInput: View {
     @FocusState private var isFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var shouldShowArithmeticKeys: Bool {
+        showArithmeticKeys && isFocused
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
+            if !label.isEmpty {
+                Text(label)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
             inputField
-            if showArithmeticKeys {
+            if shouldShowArithmeticKeys {
                 ArithmeticKeypadStrip { token in
                     appendToken(token)
                 }
@@ -32,16 +41,20 @@ struct PremiumExpressionInput: View {
             }
             statusLine
         }
+        .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: shouldShowArithmeticKeys)
         .onAppear {
             recompute(expression)
             if requestsFocusOnAppear {
                 isFocused = true
             }
         }
-        .onChange(of: focusRequest) { _, _ in
+        .onChange(of: focusRequest) { old, new in
+            guard new > old else { return }
             isFocused = true
         }
-        .onChange(of: focusReleaseRequest) { _, _ in
+        .onChange(of: focusReleaseRequest) { old, new in
+            // Only explicit release increments (endEditing); ignore demotion to 0.
+            guard new > old else { return }
             isFocused = false
         }
         .onChange(of: isFocused) { _, focused in
@@ -102,22 +115,33 @@ struct PremiumExpressionInput: View {
             }
             .font(.caption2.weight(.semibold))
             .foregroundStyle(.red.opacity(0.88))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 16, alignment: .topLeading)
         } else if !trimmed.isEmpty {
             // If the user typed a plain integer, the green computed line is redundant; hide it.
             if Int(trimmed) != nil {
-                EmptyView()
+                Color.clear.frame(height: 0)
             } else {
                 HStack(spacing: 5) {
                     Image(systemName: "equal.circle.fill")
-                    Text("\(evaluated) pcs")
+                    Text(statusValueLabel)
                         .monospacedDigit()
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.green.opacity(0.88))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minHeight: 16, alignment: .topLeading)
             }
         } else {
-            EmptyView()
+            Color.clear.frame(height: 0)
         }
+    }
+
+    private var statusValueLabel: String {
+        if let suffix, !suffix.isEmpty {
+            return "\(evaluated) \(suffix)"
+        }
+        return "\(evaluated) pcs"
     }
 
     private func appendToken(_ token: String) {
@@ -150,8 +174,8 @@ struct PremiumExpressionInput: View {
         case .multipleDotMultipliers: return "Use one \".\" multiply (e.g. 245.2)."
         case .multipleGroupedExpressions: return "Add +, −, ×, or ÷ between parts."
         case .divisionByZero: return "Cannot divide by zero."
-        case .negativeNotAllowed: return "Pieces must be 0 or more."
-        case .fractionalNotAllowed: return "Pieces must be a whole number."
+        case .negativeNotAllowed: return "Value must be 0 or more."
+        case .fractionalNotAllowed: return "Value must be a whole number."
         }
     }
 }

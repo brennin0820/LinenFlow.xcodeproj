@@ -103,9 +103,10 @@ struct RebalanceShortFloorsView: View {
                 itemPicker
                 modePicker
 
-                HStack(spacing: 10) {
-                    PremiumNumberInput(label: "Original PCS", value: $originalPCS, suffix: "pcs")
-                    PremiumNumberInput(label: "Total floors", value: $totalFloors, suffix: "floors")
+                PremiumInputPair(spacing: 10) {
+                    PremiumNumberInput(label: "Original PCS", value: $originalPCS, suffix: "pcs", showArithmeticKeys: true)
+                } trailing: {
+                    PremiumNumberInput(label: "Total floors", value: $totalFloors, suffix: "floors", showArithmeticKeys: true)
                 }
 
                 switch inputMode {
@@ -148,12 +149,18 @@ struct RebalanceShortFloorsView: View {
 
     private var simpleOverrideFields: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                PremiumNumberInput(label: "Short start", value: $shortFloorStart, suffix: "floor")
-                PremiumNumberInput(label: "Short end", value: $shortFloorEnd, suffix: "floor")
+            PremiumInputPair(spacing: 10) {
+                PremiumNumberInput(label: "Short start", value: $shortFloorStart, suffix: "floor", showArithmeticKeys: true)
+            } trailing: {
+                PremiumNumberInput(label: "Short end", value: $shortFloorEnd, suffix: "floor", showArithmeticKeys: true)
             }
 
-            PremiumNumberInput(label: "PCS currently on short floors", value: $pcsOnShortFloors, suffix: "pcs each")
+            PremiumNumberInput(
+                label: "PCS currently on short floors",
+                value: $pcsOnShortFloors,
+                suffix: "pcs each",
+                showArithmeticKeys: true
+            )
         }
     }
 
@@ -200,11 +207,17 @@ struct RebalanceShortFloorsView: View {
                             .buttonStyle(.plain)
                         }
                     }
-                    HStack(spacing: 10) {
-                        PremiumNumberInput(label: "Start", value: $override.startFloor, suffix: "floor")
-                        PremiumNumberInput(label: "End", value: $override.endFloor, suffix: "floor")
+                    PremiumInputPair(spacing: 10) {
+                        PremiumNumberInput(label: "Start", value: $override.startFloor, suffix: "floor", showArithmeticKeys: true)
+                    } trailing: {
+                        PremiumNumberInput(label: "End", value: $override.endFloor, suffix: "floor", showArithmeticKeys: true)
                     }
-                    PremiumNumberInput(label: "PCS currently on these floors", value: $override.pcsEach, suffix: "pcs each")
+                    PremiumNumberInput(
+                        label: "PCS currently on these floors",
+                        value: $override.pcsEach,
+                        suffix: "pcs each",
+                        showArithmeticKeys: true
+                    )
                 }
                 .padding(10)
                 .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -523,5 +536,28 @@ struct RebalanceShortFloorsView: View {
         if missingPCS > 0 { return "\(missingPCS) short" }
         if missingPCS < 0 { return "+\(abs(missingPCS)) extra" }
         return "0"
+    }
+}
+
+/// Side-by-side premium inputs when width allows; stacks vertically when the operator strip would squeeze.
+private struct PremiumInputPair<Leading: View, Trailing: View>: View {
+    var spacing: CGFloat = 10
+    @ViewBuilder var leading: () -> Leading
+    @ViewBuilder var trailing: () -> Trailing
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: spacing) {
+                leading()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                trailing()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            VStack(alignment: .leading, spacing: spacing) {
+                leading()
+                trailing()
+            }
+        }
     }
 }

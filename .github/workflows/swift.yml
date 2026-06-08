@@ -1,22 +1,14 @@
-# This workflow will build a Swift project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
+# Disabled: LinenFlow is an Xcode project (LinenFlow.xcodeproj), not Swift Package Manager.
+# Use .github/workflows/ios-ci.yml for iOS build and test on macos-15 runners.
 
 name: Swift
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
-
+    if: false
     runs-on: macos-latest
-
     steps:
-    - uses: actions/checkout@v6
-    - name: Build
-      run: swift build -v
-    - name: Run tests
-      run: swift test -v
+      - run: echo "This workflow is disabled. Use ios-ci.yml instead."

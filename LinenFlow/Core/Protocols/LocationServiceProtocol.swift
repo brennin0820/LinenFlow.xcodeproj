@@ -14,6 +14,6 @@ protocol LocationServiceProtocol: AnyObject, Sendable {
 }
 
 enum HimmerFlowRegionID {
-    static let home = "himmerflow.home"
-    static let work = "himmerflow.work"
+    nonisolated static let home = "himmerflow.home"
+    nonisolated static let work = "himmerflow.work"
 }

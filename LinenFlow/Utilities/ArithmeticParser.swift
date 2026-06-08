@@ -38,22 +38,22 @@ enum ArithmeticInputRules {
         if token == ".", expression.contains(".") { return false }
 
         let trimmed = expression.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return true }
+        guard !trimmed.isEmpty, let last = trimmed.last else { return true }
 
-        if needsOperatorBeforeNextTerm(trimmed) {
+        // After a closed group, require an operator before the next term.
+        if last == ")" {
             if token == "(" || token == "." || token.first?.isNumber == true {
                 return false
             }
+            return true
+        }
+
+        // Multi-digit numbers are allowed; only block implicit term boundaries.
+        if last.isNumber, token == "(" {
+            return false
         }
 
         return true
-    }
-
-    private static func needsOperatorBeforeNextTerm(_ trimmed: String) -> Bool {
-        guard let last = trimmed.last else { return false }
-        if last == ")" { return true }
-        if last.isNumber { return true }
-        return false
     }
 }
 

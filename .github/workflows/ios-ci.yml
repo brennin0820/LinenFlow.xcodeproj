@@ -38,22 +38,70 @@ jobs:
       - name: Select iOS Simulator
         id: simulator
         run: |
-          SIMULATOR_ID=$(xcodebuild \
-            -project LinenFlow.xcodeproj \
-            -scheme HimmerFlow \
-            -showdestinations 2>/dev/null \
-            | grep "platform:iOS Simulator" \
-            | grep -v placeholder \
-            | grep "iPhone" \
-            | head -1 \
-            | sed -n 's/.*id:\([^,]*\).*/\1/p')
+          set -euo pipefail
+
+          extract_udid() {
+            sed -E 's/^[[:space:]]+.*\(([A-F0-9-]+)\).*/\1/'
+          }
+
+          find_simulator_by_name() {
+            local name="$1"
+            xcrun simctl list devices available \
+              | grep -F "    ${name} (" \
+              | head -1 \
+              | extract_udid
+          }
+
+          find_any_iphone_simulator() {
+            xcrun simctl list devices available \
+              | grep -E '^[[:space:]]+iPhone ' \
+              | grep -v unavailable \
+              | head -1 \
+              | extract_udid
+          }
+
+          echo "Available iOS simulators:"
+          xcrun simctl list devices available | grep -E '^-- iOS|^[[:space:]]+iPhone ' || true
+
+          PREFERRED_NAMES=(
+            "iPhone 16"
+            "iPhone 17"
+            "iPhone 15"
+            "iPhone 16 Pro"
+            "iPhone 17 Pro"
+            "iPhone 15 Pro"
+            "iPhone SE (3rd generation)"
+          )
+
+          SIMULATOR_ID=""
+          SIMULATOR_NAME=""
+
+          for name in "${PREFERRED_NAMES[@]}"; do
+            candidate="$(find_simulator_by_name "$name" || true)"
+            if [ -n "$candidate" ]; then
+              SIMULATOR_ID="$candidate"
+              SIMULATOR_NAME="$name"
+              break
+            fi
+          done
+
+          if [ -z "$SIMULATOR_ID" ]; then
+            SIMULATOR_ID="$(find_any_iphone_simulator || true)"
+            SIMULATOR_NAME="first available iPhone"
+          fi
+
           if [ -z "$SIMULATOR_ID" ]; then
             echo "No iPhone simulator found" >&2
-            xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -showdestinations
+            xcrun simctl list devices available
             exit 1
           fi
-          echo "Using simulator: $SIMULATOR_ID"
+
+          echo "Selected simulator: ${SIMULATOR_NAME} (${SIMULATOR_ID})"
+          xcrun simctl boot "$SIMULATOR_ID" 2>/dev/null || true
+          xcrun simctl bootstatus "$SIMULATOR_ID" -b
+
           echo "id=$SIMULATOR_ID" >> "$GITHUB_OUTPUT"
+          echo "name=$SIMULATOR_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: |

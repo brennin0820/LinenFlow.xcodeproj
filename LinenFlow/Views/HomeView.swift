@@ -22,6 +22,9 @@ struct HomeView: View {
     @State private var showDeliveryCommandCenter = false
     @State private var keyboardBottomInset: CGFloat = 0
     @State private var scrollViewportHeight: CGFloat = 0
+    /// Prevents repeated `scrollTo` during keyboard frame updates (resigns first responder).
+    @State private var didScrollForKeyboardInset = false
+    @State private var lastAutoScrolledItemID: UUID?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -32,8 +35,13 @@ struct HomeView: View {
                     ScrollView {
                         flowContent
                             .padding(.bottom, editingScrollBottomPadding)
+                            .transaction { transaction in
+                                if focusedItemID != nil {
+                                    transaction.animation = nil
+                                }
+                            }
                     }
-                    .scrollDismissesKeyboard(.interactively)
+                    .scrollDismissesKeyboard(focusedItemID == nil ? .interactively : .never)
                     .scrollDisabled(focusedItemID != nil)
                     .background {
                         GeometryReader { geometry in
@@ -45,14 +53,12 @@ struct HomeView: View {
                         }
                     }
                     .onChange(of: focusedItemID) { _, itemID in
-                        scrollFocusedItemIntoView(proxy: scrollProxy, itemID: itemID)
+                        handleFocusedItemScroll(proxy: scrollProxy, itemID: itemID)
                     }
-                    .onChange(of: focusRequest) { _, _ in
-                        scrollFocusedItemIntoView(proxy: scrollProxy, itemID: focusedItemID)
-                    }
-                    .onChange(of: keyboardBottomInset) { _, inset in
-                        guard inset > 0, focusedItemID != nil else { return }
-                        scrollFocusedItemIntoView(proxy: scrollProxy, itemID: focusedItemID, delay: 0.05)
+                    .onChange(of: keyboardBottomInset) { oldInset, inset in
+                        guard inset > 0, oldInset == 0, focusedItemID != nil, !didScrollForKeyboardInset else { return }
+                        didScrollForKeyboardInset = true
+                        scrollFocusedItemIntoView(proxy: scrollProxy, itemID: focusedItemID, delay: 0.08)
                     }
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -147,7 +153,7 @@ struct HomeView: View {
                     smartFillCard
                 }
                 itemSelectionCard
-                if !viewModel.calculationSummaries.isEmpty {
+                if !viewModel.calculationSummaries.isEmpty, focusedItemID == nil {
                     summaryStrip
                 }
                 let actionableWarnings = viewModel.validationWarnings.filter {
@@ -936,16 +942,15 @@ struct HomeView: View {
             isFocused: isFocused,
             focusRequest: isFocused ? focusRequest : 0,
             focusReleaseRequest: isFocused ? focusReleaseRequest : 0,
-            onEditRequested: { activateEditing(item) },
             onFocusChange: { focused in
                 handleItemFocusChange(item: item, focused: focused)
             }
         )
+        .equatable()
         .id(item.id)
         .opacity(isLockedElsewhere ? 0.42 : 1)
         .keyboardEditingTapAbsorber(isActive: isLockedElsewhere)
         .zIndex(isFocused ? 1 : 0)
-        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: focusedItemID)
         .accessibilityLabel(linenCardAccessibilityLabel(item: item, isFocused: isFocused, isLockedElsewhere: isLockedElsewhere))
     }
 
@@ -985,15 +990,32 @@ struct HomeView: View {
         return max(180, scrollViewportHeight - reserved)
     }
 
+    private func resetEditingScrollTracking() {
+        didScrollForKeyboardInset = false
+        lastAutoScrolledItemID = nil
+    }
+
+    private func handleFocusedItemScroll(proxy: ScrollViewProxy, itemID: UUID?) {
+        guard let itemID else {
+            resetEditingScrollTracking()
+            return
+        }
+        guard lastAutoScrolledItemID != itemID else { return }
+        lastAutoScrolledItemID = itemID
+        didScrollForKeyboardInset = false
+        scrollFocusedItemIntoView(proxy: proxy, itemID: itemID)
+    }
+
     private func scrollFocusedItemIntoView(
         proxy: ScrollViewProxy,
         itemID: UUID?,
         delay: TimeInterval = 0
     ) {
         guard let itemID else { return }
-        let animation = reduceMotion ? nil : KeyboardPinnedEditorMotion.lift
         let scroll = {
-            withAnimation(animation) {
+            var transaction = Transaction()
+            transaction.animation = reduceMotion ? nil : KeyboardPinnedEditorMotion.lift
+            withTransaction(transaction) {
                 proxy.scrollTo(itemID, anchor: .bottom)
             }
         }
@@ -1080,6 +1102,7 @@ struct HomeView: View {
         focusReleaseRequest += 1
         focusedItemID = nil
         freshEditingItemID = nil
+        resetEditingScrollTracking()
     }
 
     private func canMoveToAdjacentItem(offset: Int) -> Bool {
@@ -1217,20 +1240,24 @@ private struct EquatableLinenListCard: View, Equatable {
     let isFocused: Bool
     let focusRequest: Int
     let focusReleaseRequest: Int
-    let onEditRequested: () -> Void
     let onFocusChange: (Bool) -> Void
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.item.id == rhs.item.id
-            && lhs.entry?.calculatedPieces == rhs.entry?.calculatedPieces
+        guard lhs.item.id == rhs.item.id,
+              lhs.isFocused == rhs.isFocused,
+              lhs.unitIsBundles == rhs.unitIsBundles else { return false }
+
+        // While editing, ignore VM echo so keystrokes don't recreate the TextField.
+        if lhs.isFocused {
+            return lhs.focusRequest == rhs.focusRequest
+                && lhs.focusReleaseRequest == rhs.focusReleaseRequest
+        }
+
+        return lhs.entry?.calculatedPieces == rhs.entry?.calculatedPieces
             && lhs.summary?.receivedPieces == rhs.summary?.receivedPieces
             && lhs.summary?.status == rhs.summary?.status
             && lhs.distributionRows.count == rhs.distributionRows.count
-            && lhs.unitIsBundles == rhs.unitIsBundles
             && lhs.hasSupplyAnomaly == rhs.hasSupplyAnomaly
-            && lhs.isFocused == rhs.isFocused
-            && (!lhs.isFocused || lhs.focusRequest == rhs.focusRequest)
-            && (!lhs.isFocused || lhs.focusReleaseRequest == rhs.focusReleaseRequest)
     }
 
     var body: some View {
@@ -1244,7 +1271,6 @@ private struct EquatableLinenListCard: View, Equatable {
             focusReleaseRequest: focusReleaseRequest,
             isCompactPinned: false,
             isFocused: isFocused,
-            onEditRequested: onEditRequested,
             onFocusChange: onFocusChange
         ) { pieces in
             viewModel.addOrUpdateReceivedPieces(item: item, pieces: pieces)

@@ -54,7 +54,7 @@ func computeTimeline(
         .init(phase: .parking, start: parkingStart, end: walkInStart),
         .init(phase: .walkIn, start: walkInStart, end: arrivalStart),
         .init(phase: .arrival, start: arrivalStart, end: clockInTime),
-        .init(phase: .shiftCountdown, start: shiftCountdownStart, end: clockInTime),
+        .init(phase: .shiftCountdown, start: shiftCountdownStart, end: shiftCountdownStart),
         .init(phase: .shiftActive, start: clockInTime, end: shiftActiveEnd),
         .init(phase: .shiftEnd, start: shiftEndStart, end: shiftEndStart),
         .init(phase: .beDown, start: shiftEndStart, end: beDownEnd),

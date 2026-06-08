@@ -138,4 +138,18 @@ final class ArithmeticTests: XCTestCase {
         assertError("245*11+", .partial)
         assertError("245.", .partial)
     }
+
+    func test_32_inputRulesAllowMultiDigitNumbers() {
+        XCTAssertEqual(ArithmeticInputRules.filter("10", previous: "1"), "10")
+        XCTAssertEqual(ArithmeticInputRules.filter("100", previous: "10"), "100")
+        XCTAssertEqual(ArithmeticInputRules.filter("250", previous: "25"), "250")
+        XCTAssertTrue(ArithmeticInputRules.canAppend("0", to: "24"))
+    }
+
+    func test_33_inputRulesBlockImplicitTermBoundaries() {
+        XCTAssertEqual(ArithmeticInputRules.filter("245(", previous: "245"), "245")
+        XCTAssertEqual(ArithmeticInputRules.filter("(245*11)5", previous: "(245*11)"), "(245*11)")
+        XCTAssertFalse(ArithmeticInputRules.canAppend("(", to: "245"))
+        XCTAssertFalse(ArithmeticInputRules.canAppend("5", to: "(245*11)"))
+    }
 }

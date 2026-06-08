@@ -4,7 +4,7 @@
 >
 > Master plan: `docs/superpowers/plans/2026-06-08-linen-tab-master-plan.md`
 
-**Last updated:** 2026-06-07 (track B compile verify — `trackB-b7e2`)
+**Last updated:** 2026-06-07 (parallel linen polish — `parallel-linen-polish`)
 
 ---
 
@@ -39,12 +39,10 @@ These files have the highest merge-conflict risk. **Serialize** — one active a
 
 | Agent ID | Task | Files owned | Status | Started (UTC) |
 |----------|------|-------------|--------|---------------|
-| `a7618ee3` | Phase 11 — polish / a11y (card + input + keyboard shell) | `LinenFlow/Views/Flow/OneScreenLinenItemCard.swift`, `LinenFlow/Views/Components/PremiumExpressionInput.swift`, `LinenFlow/Views/Components/KeyboardPinnedEditorShell.swift` | **ACTIVE — do not touch** | 2026-06-07 |
+| `a7618ee3` | Phase 11 — polish / a11y (card + input + keyboard shell) | `LinenFlow/Views/Components/KeyboardPinnedEditorShell.swift` | **ACTIVE — do not touch** | 2026-06-07 |
 | `f19a62cd` | Phase 12 — wizard orphan / Legacy folder + HomeView nav | `LinenFlow/Views/HomeView.swift`, `LinenFlow/Views/Flow/Legacy/**`, `LinenFlow/Views/Flow/ReceivingView.swift`, `LinenFlow/Views/Flow/ReviewReceivedView.swift`, `LinenFlow/Views/Flow/ResultsView.swift`, `LinenFlow/Views/Flow/FloorDistributionView.swift`, `LinenFlow/Views/Flow/RebalanceShortFloorsView.swift`, `LinenFlow.xcodeproj/project.pbxproj` | **ACTIVE — do not touch** | 2026-06-07 |
 | `9e5546a4` | Floor detection — VM + delivery UI | `LinenFlow/ViewModels/FlowViewModel.swift`, `LinenFlow/Views/Flow/ShiftCommandCenterView.swift`, `LinenFlow/Views/Flow/FloorChecklistView.swift`, `LinenFlow/Views/Flow/FloorDetectionCard.swift` | **ACTIVE — do not touch** | 2026-06-07 |
 | `50fed4e9` | Post-completion audit / build / install | `LinenFlow.xcodeproj/project.pbxproj` (shared — coordinate), `TestPlan.xctestplan`, `.github/workflows/**`, repo-wide verification (read-mostly; write only after other claims release) | **ACTIVE — do not touch** (advisory on pbxproj) | 2026-06-07 |
-| `qa-timeline-fix` | QA — TimelineComputationTests missing import | `LinenFlowTests/TimelineComputationTests.swift` | **ACTIVE — do not touch** | 2026-06-07 |
-| `kb-autoclose-fix` | Keyboard auto-dismiss — stable ScrollView + entry sync guard | `LinenFlow/Views/Flow/OneScreenLinenItemCard.swift` | **ACTIVE — do not touch** | 2026-06-07 |
 
 ---
 
@@ -54,10 +52,6 @@ Explicit locks — **do not edit** these paths while locked.
 
 | File | Locked by | Since | Notes |
 |------|-----------|-------|-------|
-| `LinenFlow/Views/Flow/OneScreenLinenItemCard.swift` | `a7618ee3` | 2026-06-07 | Phase 11 card polish |
-| `LinenFlow/Views/Components/PremiumExpressionInput.swift` | `a7618ee3` | 2026-06-07 | Expression input a11y |
-| `LinenFlow/Views/Components/KeyboardPinnedEditorShell.swift` | `a7618ee3` | 2026-06-07 | Keyboard pinned editor |
-| `LinenFlow/Views/HomeView.swift` | `f19a62cd` | 2026-06-07 | Wizard nav / Legacy — **hotspot** |
 | `LinenFlow/Views/Flow/Legacy/**` | `f19a62cd` | 2026-06-07 | Wizard archive moves |
 | `LinenFlow/Views/Flow/ReceivingView.swift` | `f19a62cd` | 2026-06-07 | Wizard (may move to Legacy) |
 | `LinenFlow/Views/Flow/ReviewReceivedView.swift` | `f19a62cd` | 2026-06-07 | Wizard (may move to Legacy) |
@@ -69,8 +63,6 @@ Explicit locks — **do not edit** these paths while locked.
 | `LinenFlow/Views/Flow/ShiftCommandCenterView.swift` | `9e5546a4` | 2026-06-07 | Delivery command center |
 | `LinenFlow/Views/Flow/FloorChecklistView.swift` | `9e5546a4` | 2026-06-07 | Floor checklist |
 | `LinenFlow/Views/Flow/FloorDetectionCard.swift` | `9e5546a4` | 2026-06-07 | New or modified floor detection UI |
-| `LinenFlowTests/TimelineComputationTests.swift` | `qa-timeline-fix` | 2026-06-07 | QA — add @testable import HimmerFlow |
-| `LinenFlow/Views/Flow/OneScreenLinenItemCard.swift` | `kb-autoclose-fix` | 2026-06-07 | Keyboard auto-dismiss fix (supersedes `a7618ee3` claim for this file — coordinate on merge) |
 **Unlocked (safe for new claims if no other agent needs them):** Models, Services (except via FlowViewModel), `AppRootView.swift`, `android/**`, most Components not listed above, `docs/**`.
 
 ---
@@ -79,6 +71,7 @@ Explicit locks — **do not edit** these paths while locked.
 
 | Agent ID | Task | Files | Completed | Verification |
 |----------|------|-------|-----------|--------------|
+| `device-install-now` | Pre-polish device install — HimmerFlow | _(none — install only)_ | 2026-06-07 | Device `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS,id=00008150-00056D260282401C' -allowProvisioningUpdates build` — **BUILD SUCCEEDED**; `devicectl device install app` on Brent Lennin's iPhone (iPhone 17 Pro Max, `70093628-E2B5-509B-B807-4E06B510CEF1`) — **INSTALL SUCCEEDED** (`Banana.HimmerFlow`); no compile fixes required |
 | `89f7ca28` | Docs — device capabilities inventory + Linen tab manual QA | `docs/ios-device-capabilities-inventory.md`, `docs/LinenTabManualQA.md` | 2026-06-07 | Docs only — no Swift; 50fed4e9 had not created inventory yet |
 | _(coordination setup)_ | Agent file-coordination infrastructure | `AGENT_WORK_LOG.md`, `.cursor/rules/agent-file-coordination.mdc`, `docs/AGENT_COORDINATION.md` | 2026-06-07 | Docs only — no Swift edits |
 | `b3c4d5e6` | PremiumCard calm pass — reduce visual intensity | `LinenFlow/Views/Components/PremiumCard.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD FAILED** (unrelated: `Weekday` redeclaration in `ShiftPattern.swift`, `HimmerFlowMigrationPlan.swift`); PremiumCard.swift has no compile errors |
@@ -90,6 +83,17 @@ Explicit locks — **do not edit** these paths while locked.
 | `c3f8a912` | Restore missing model APIs — device build/install | `ShiftPlannerSettings.swift`, `ShiftTimelinePhase.swift`, `ShiftTimelineSnapshot.swift`, `SavedLocation.swift`, `ShiftPattern.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS,id=00008150-00056D260282401C' -allowProvisioningUpdates build` — **BUILD SUCCEEDED**; `xcrun devicectl device install app --device 70093628-E2B5-509B-B807-4E06B510CEF1 …/Debug-iphoneos/HimmerFlow.app` — **INSTALL SUCCEEDED** |
 | `trackB-b7e2` | Parallel track B — compile error audit (no code changes) | _(read-only verification)_ | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'generic/platform=iOS' build` — **BUILD SUCCEEDED**; zero compile errors; prior fixes by `c3f8a912` already present (`SavedLocation.coordinate`, `ShiftTimelinePhase.displayName/statusEmoji/requiresAcknowledgement`, `ShiftPattern.clockInHour/Minute`, `Weekday` single definition) |
 | `swiftdata-cal-fix` | SwiftData crash — `_CalendarProtocol` in persisted DateComponents | `ShiftPlannerSettings.swift`, `ShiftPattern.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; simulator test launch failed (Invalid device state — environment, not code) |
+| `qa-timeline-fix` | QA — TimelineComputationTests missing import | `LinenFlowTests/TimelineComputationTests.swift` (no edit — `@testable import HimmerFlow` already present) | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' test` — **TEST FAILED**: 293 XCTest executed, **288 passed / 5 failed** (all `TimelineComputationTests`: `testMidnightCrossingPrepPhasesOnPriorCalendarDay` ×3 asserts, `testStandardNightShiftPhaseBoundaries`, `testVeryLongCommuteHasNoPhaseOverlap`); Swift Testing: **56/56 passed**; compile OK |
+| `kb-autoclose-fix` | Keyboard auto-dismiss while typing on Linen tab | `HomeView.swift`, `OneScreenLinenItemCard.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; Equatable skip VM echo while focused; removed competing `onTapGesture`; prior stable ScrollView + entry-sync guard already present |
+| `kb-autoclose-fix2` | Keyboard auto-dismiss — Equatable + scroll guard | `HomeView.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; fixed inverted `==` guard (`!isFocused \|\|` still compared VM echo); added `.equatable()`; `scrollDismissesKeyboard(.never)` while editing |
+| `ios-ci-sim-fix` | QA — robust iOS simulator selection in CI | `.github/workflows/ios-ci.yml`, `.github/workflows/swift.yml` | 2026-06-07 | Local script test — selected iPhone 17 via simctl fallback chain; swift.yml disabled (no Package.swift) |
+| `kb-parallel-card` | Keyboard auto-close fix — card/input layer | `OneScreenLinenItemCard.swift`, `PremiumExpressionInput.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; `StableLinenExpressionSection` equatable isolation; defer VM sync while focused; focus request/release only on increment; stable ScrollView frame |
+| `kb-parallel-shell` | Keyboard auto-close — shell/focus layer | `HomeView.swift`, `KeyboardPinnedEditorShell.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; deduped scrollTo; non-animated keyboard inset; freeze summary strip while editing; Equatable + scrollDismissesKeyboard from prior tree retained |
+| `full-audit-install` | Full audit — timeline fixes, build, test, device install | `LinenFlow/Core/TimelineComputation.swift`, `LinenFlowTests/TimelineComputationTests.swift` | 2026-06-07 | Simulator `build` — **BUILD SUCCEEDED**; `test` — **TEST SUCCEEDED** (293/293 XCTest + 56/56 Swift Testing); device `build` + `devicectl install` on Brent Lennin's iPhone (iPhone 17 Pro Max) — **INSTALL SUCCEEDED** |
+| `fix-2digit-input` | Fix multi-digit expression input cap | `LinenFlow/Utilities/ArithmeticParser.swift`, `LinenFlowTests/ArithmeticTests.swift` | 2026-06-07 | `xcodebuild … build` — **BUILD SUCCEEDED**; `HimmerFlowTests/ArithmeticTests` (33 tests) — **TEST SUCCEEDED** |
+| `calc-all-premium-inputs` | Calculator behavior on all premium value inputs | `PremiumNumberInput.swift`, `PremiumExpressionInput.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; `HimmerFlowTests/ArithmeticTests` (33 tests) — **TEST SUCCEEDED** |
+| `calc-keys-wire` | Calculator operator strip on card value inputs | `PremiumExpressionInput.swift`, `PremiumNumberInput.swift`, `OneScreenLinenItemCard.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; focus-gated strip on all Linen tab cards; ReceivingView/RebalanceShortFloors blocked by `f19a62cd` lock |
+| `parallel-linen-polish` | Linen tab + shared input polish | `OneScreenLinenItemCard.swift`, `HomeView.swift` (linen tab), `PremiumExpressionInput.swift`, `PremiumNumberInput.swift`, `KeyboardPinnedEditorShell.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; removed dead `onEditRequested`, orphaned placeholder/panel views, unused motion transitions; label + status-line alignment polish on expression inputs |
 
 ---
 
@@ -121,6 +125,12 @@ See master plan for full table. Summary:
 | 2026-06-07 | Model API restore + device install (`c3f8a912`) — hasCompletedOnboarding, phase display props, progressFraction, coordinate, clockInHour/Minute, isPointEvent |
 | 2026-06-07 | Track B compile audit (`trackB-b7e2`) — generic iOS device build passes; no additional fixes required |
 | 2026-06-07 | SwiftData Calendar crash fix (`swiftdata-cal-fix`) — replaced persisted `DateComponents` with `clockInHour`/`clockInMinute` on `ShiftPlannerSettings` and `ShiftPattern` |
+| 2026-06-07 | Keyboard auto-dismiss fix (`kb-autoclose-fix`) — EquatableLinenListCard ignores VM echo while focused; removed expression input tap gesture |
+| 2026-06-07 | Keyboard auto-dismiss fix2 (`kb-autoclose-fix2`) — corrected Equatable `==` short-circuit; `.equatable()` on list card; no scroll keyboard dismiss while editing |
+| 2026-06-07 | iOS CI simulator selection (`ios-ci-sim-fix`) — simctl-based picker with boot + name fallbacks; disabled legacy swift.yml |
+| 2026-06-07 | Keyboard auto-close card/input fix (`kb-parallel-card`) — equatable expression section, deferred VM sync while focused, focus token guards |
+| 2026-06-07 | Keyboard shell focus fix (`kb-parallel-shell`) — stop animated scroll/inset churn while editing; hide live summary strip during edit |
+| 2026-06-07 | Legacy premium polish (`parallel-legacy-polish`) — calculator keys on Legacy Receiving + Rebalance inputs; adaptive input pairs |
 
 ---
 

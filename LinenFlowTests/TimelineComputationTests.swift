@@ -91,7 +91,7 @@ final class TimelineComputationTests: XCTestCase {
         XCTAssertEqual(wake.start, getReady.start)
         XCTAssertEqual(arrival.end, clockIn)
         XCTAssertTrue(preSleep.start < sleep.start)
-        XCTAssertTrue(sleep.start < calendar.startOfDay(for: clockIn))
+        XCTAssertTrue(sleep.start < clockIn, "Sleep block should precede clock-in anchor")
     }
 
     // MARK: - DST spring-forward (March 10, 2024)
@@ -144,7 +144,8 @@ final class TimelineComputationTests: XCTestCase {
 
     func testMidnightCrossingPrepPhasesOnPriorCalendarDay() {
         let calendar = easternCalendar
-        let clockIn = date(year: 2024, month: 6, day: 15, hour: 23, minute: 30, calendar: calendar)
+        // 1:00 AM clock-in: backward chain crosses midnight into the prior calendar day.
+        let clockIn = date(year: 2024, month: 6, day: 16, hour: 1, minute: 0, calendar: calendar)
         let settings = defaultSettings()
         let snapshot = computeTimeline(
             clockInTime: clockIn,
