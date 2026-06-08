@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hilton Hawaiian Village — Site Plan | HimmerFlow</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --border: #2a3544;
+      --text: #e8ecf0;
+      --muted: #8b9aab;
+      --accent: #00bcd4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    header h1 { font-size: 1.35rem; font-weight: 700; }
+    header p { color: var(--muted); font-size: 0.875rem; margin-top: 0.35rem; }
+    header a { color: var(--accent); }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 0;
+      min-height: calc(100vh - 88px);
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { border-top: 1px solid var(--border); }
+    }
+    .map-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .map-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      align-items: center;
+    }
+    .map-toolbar button {
+      background: var(--border);
+      color: var(--text);
+      border: none;
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .map-toolbar button:hover { background: #3a4555; }
+    .map-toolbar button.primary { background: var(--accent); color: #0f1419; }
+    .map-toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+    .map-viewport {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: #1e2630;
+    }
+    .map-stage {
+      transform-origin: 0 0;
+      position: relative;
+      width: 1400px;
+      height: 1100px;
+    }
+    .map-stage img.satellite {
+      position: absolute;
+      inset: 0;
+      width: 1400px;
+      height: 1100px;
+      object-fit: cover;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .map-stage img.satellite.visible { opacity: 0.55; }
+    .map-stage object, .map-stage svg {
+      position: relative;
+      display: block;
+      width: 1400px;
+      height: 1100px;
+    }
+    .map-stage svg { background: transparent; }
+    .map-stage.has-satellite svg { background: transparent; }
+    .map-stage:not(.has-satellite) svg { background: #f5f5f0; }
+    aside {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    aside section { margin-bottom: 1.25rem; }
+    aside h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+    .layer-list, .tower-list { list-style: none; }
+    .layer-list li, .tower-list li { margin-bottom: 0.35rem; }
+    .layer-list label, .tower-list button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      color: var(--text);
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
+    }
+    .tower-list button:hover { background: var(--border); }
+    .tower-list button.selected { background: var(--accent); color: #0f1419; }
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .pill {
+      margin-left: auto;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      background: var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+    }
+    .tower-list button.selected .pill { background: rgba(0,0,0,0.2); color: inherit; }
+    .detail-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-size: 0.875rem;
+    }
+    .detail-card strong { display: block; font-size: 1rem; margin-bottom: 0.25rem; }
+    .detail-card .meta { color: var(--muted); font-size: 0.8125rem; }
+    .zone { margin-bottom: 0.75rem; }
+    .zone strong { font-size: 0.875rem; }
+    .zone p { font-size: 0.8125rem; color: var(--muted); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 0.75rem;
+    }
+    .stat { text-align: center; }
+    .stat .val { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .stat .lbl { color: var(--muted); }
+    .hidden-layer { display: none !important; }
+    .tower-pin { cursor: pointer; transition: opacity 0.15s; }
+    .tower-pin.dimmed { opacity: 0.35; }
+    .tower-pin.selected circle { r: 26; stroke-width: 3; }
+    .tower-pin.selected text { font-size: 11px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Hilton Hawaiian Village — Site Plan</h1>
+    <p>GPS-calibrated HimmerFlow towers · North up · Beach south · Lagoon west ·
+      <a href="https://www.google.com/maps/@21.28255,-157.8372,18z/data=!3m1!1e3" target="_blank" rel="noopener">Google Maps satellite</a>
+    </p>
+  </header>
+
+  <div class="layout">
+    <div class="map-panel">
+      <div class="map-toolbar">
+        <button type="button" id="zoom-in">Zoom in</button>
+        <button type="button" id="zoom-out">Zoom out</button>
+        <button type="button" id="zoom-reset">Reset</button>
+        <label><input type="checkbox" id="satellite-toggle"> Satellite background</label>
+      </div>
+      <div class="map-viewport" id="viewport">
+        <div class="map-stage" id="stage">
+          <img class="satellite" id="satellite-img" src="../property-overview.png" alt="Satellite overview">
+          <object id="site-plan-object" data="../HiltonHawaiianVillage-SitePlan.svg" type="image/svg+xml" width="1400" height="1100">
+            <p>SVG not supported. Open <a href="../HiltonHawaiianVillage-SitePlan.svg">HiltonHawaiianVillage-SitePlan.svg</a> directly.</p>
+          </object>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="val">7</div><div class="lbl">GPS towers</div></div>
+        <div class="stat"><div class="val">22 ac</div><div class="lbl">Resort footprint</div></div>
+        <div class="stat"><div class="val">N↑</div><div class="lbl">North up</div></div>
+      </div>
+    </div>
+
+    <aside>
+      <section>
+        <h2>Layers</h2>
+        <ul class="layer-list" id="layer-list"></ul>
+      </section>
+      <section>
+        <h2>Selected tower</h2>
+        <div class="detail-card" id="tower-detail">
+          <span class="meta">Click a tower pin or name below</span>
+        </div>
+      </section>
+      <section>
+        <h2>HimmerFlow towers</h2>
+        <ul class="tower-list" id="tower-list"></ul>
+      </section>
+      <section>
+        <h2>Major zones</h2>
+        <div id="zones"></div>
+      </section>
+    </aside>
+  </div>
+
+  <script id="embedded-data" type="application/json">
+{
+  "property": {
+    "name": "Hilton Hawaiian Village",
+    "location": "Waikiki, Honolulu, HI",
+    "center": {
+      "latitude": 21.2831,
+      "longitude": -157.8371
+    },
+    "orientation": "north_up",
+    "notes": "Beach south \u00b7 lagoon west \u00b7 Kalia Road east. Tower pins GPS-calibrated from DefaultData.swift."
+  },
+  "map": {
+    "viewBox": "0 0 1400 1100",
+    "width": 1400,
+    "height": 1100
+  },
+  "layers": [
+    "roads",
+    "lots",
+    "buildings",
+    "garage",
+    "easements",
+    "trees",
+    "towers"
+  ],
+  "zones": [
+    {
+      "id": "lagoon",
+      "label": "Duke Kahanamoku Lagoon",
+      "detail": "West side \u00b7 turquoise lagoon between Rainbow Tower and marina"
+    },
+    {
+      "id": "beach",
+      "label": "Kahanamoku Beach",
+      "detail": "South edge \u00b7 Pacific Ocean frontage"
+    },
+    {
+      "id": "garage",
+      "label": "Kalia Rd Parking Garage",
+      "detail": "Northeast per satellite \u00b7 along Kalia Road"
+    }
+  ],
+  "towers": [
+    {
+      "name": "Rainbow",
+      "floors": 31,
+      "color": "#F05A7E",
+      "cx": 165,
+      "cy": 886,
+      "latitude": 21.2821542,
+      "longitude": -157.8382747,
+      "deliveryMode": "bundles"
+    },
+    {
+      "name": "Lagoon",
+      "floors": 21,
+      "color": "#00A6C8",
+      "cx": 166,
+      "cy": 512,
+      "latitude": 21.2833196,
+      "longitude": -157.8382704,
+      "deliveryMode": "pieces"
+    },
+    {
+      "name": "GW",
+      "floors": 32,
+      "color": "#2F6F8F",
+      "cx": 635,
+      "cy": 196,
+      "latitude": 21.2843,
+      "longitude": -157.837,
+      "deliveryMode": "pieces"
+    },
+    {
+      "name": "GI",
+      "floors": 32,
+      "color": "#C89B3C",
+      "cx": 1186,
+      "cy": 780,
+      "latitude": 21.28248378,
+      "longitude": -157.83551005,
+      "deliveryMode": "pieces"
+    },
+    {
+      "name": "Tapa",
+      "floors": 33,
+      "color": "#B66A35",
+      "cx": 802,
+      "cy": 598,
+      "latitude": 21.28158,
+      "longitude": -157.83809,
+      "deliveryMode": "bundles"
+    },
+    {
+      "name": "Diamond",
+      "floors": 15,
+      "color": "#7C878E",
+      "cx": 672,
+      "cy": 695,
+      "latitude": 21.28108,
+      "longitude": -157.83558,
+      "deliveryMode": "bundles"
+    },
+    {
+      "name": "Alii",
+      "floors": 14,
+      "color": "#7B3F98",
+      "cx": 432,
+      "cy": 486,
+      "latitude": 21.28274,
+      "longitude": -157.83638,
+      "deliveryMode": "bundles"
+    }
+  ],
+  "treePositions": [
+    [
+      120,
+      850
+    ],
+    [
+      140,
+      600
+    ],
+    [
+      160,
+      400
+    ],
+    [
+      200,
+      200
+    ],
+    [
+      350,
+      150
+    ],
+    [
+      550,
+      130
+    ],
+    [
+      750,
+      125
+    ],
+    [
+      950,
+      140
+    ],
+    [
+      300,
+      500
+    ],
+    [
+      450,
+      480
+    ],
+    [
+      600,
+      460
+    ],
+    [
+      750,
+      500
+    ],
+    [
+      500,
+      380
+    ],
+    [
+      650,
+      360
+    ],
+    [
+      850,
+      400
+    ],
+    [
+      1050,
+      600
+    ],
+    [
+      1150,
+      750
+    ],
+    [
+      1250,
+      550
+    ],
+    [
+      200,
+      920
+    ],
+    [
+      400,
+      960
+    ],
+    [
+      700,
+      980
+    ],
+    [
+      1000,
+      970
+    ]
+  ],
+  "links": {
+    "googleMapsSatellite": "https://www.google.com/maps/@21.28255,-157.8372,18z/data=!3m1!1e3",
+    "appleMaps": "https://maps.apple.com/?q=Hilton+Hawaiian+Village&ll=21.2831,-157.8371&z=17"
+  },
+  "sourceFiles": [
+    "LinenFlow/SeedData/DefaultData.swift",
+    "LinenFlow/Utilities/HiltonPropertyMap.swift"
+  ]
+}
+  </script>
+  <script>
+(function () {
+  const DATA = JSON.parse(document.getElementById("embedded-data").textContent);
+  let zoom = 1;
+  let selectedTower = null;
+  let svgDoc = null;
+
+  const stage = document.getElementById("stage");
+  const viewport = document.getElementById("viewport");
+  const satelliteImg = document.getElementById("satellite-img");
+  const satelliteToggle = document.getElementById("satellite-toggle");
+  const towerDetail = document.getElementById("tower-detail");
+  const layerList = document.getElementById("layer-list");
+  const towerList = document.getElementById("tower-list");
+  const zonesEl = document.getElementById("zones");
+
+  const layers = Object.fromEntries(DATA.layers.map(k => [k, true]));
+
+  function applyZoom() {
+    stage.style.transform = "scale(" + zoom + ")";
+  }
+
+  document.getElementById("zoom-in").onclick = () => {
+    zoom = Math.min(2.2, zoom + 0.15);
+    applyZoom();
+  };
+  document.getElementById("zoom-out").onclick = () => {
+    zoom = Math.max(0.7, zoom - 0.15);
+    applyZoom();
+  };
+  document.getElementById("zoom-reset").onclick = () => {
+    zoom = 1;
+    selectedTower = null;
+    updateSelection();
+    applyZoom();
+    viewport.scrollTop = 0;
+    viewport.scrollLeft = 0;
+  };
+
+  satelliteToggle.onchange = () => {
+    satelliteImg.classList.toggle("visible", satelliteToggle.checked);
+    stage.classList.toggle("has-satellite", satelliteToggle.checked);
+  };
+
+  function renderSidebar() {
+    layerList.innerHTML = DATA.layers.map(key =>
+      `<li><label><input type="checkbox" data-layer="${key}" ${layers[key] ? "checked" : ""}> ${key.charAt(0).toUpperCase() + key.slice(1)}</label></li>`
+    ).join("");
+    layerList.querySelectorAll("input").forEach(cb => {
+      cb.onchange = () => {
+        layers[cb.dataset.layer] = cb.checked;
+        toggleLayer(cb.dataset.layer, cb.checked);
+      };
+    });
+
+    towerList.innerHTML = DATA.towers.map(t =>
+      `<li><button type="button" data-tower="${t.name}"><span class="swatch" style="background:${t.color}"></span>${t.name}<span class="pill">${t.floors} fl</span></button></li>`
+    ).join("");
+    towerList.querySelectorAll("button").forEach(btn => {
+      btn.onclick = () => selectTower(btn.dataset.tower === selectedTower ? null : btn.dataset.tower);
+    });
+
+    zonesEl.innerHTML = DATA.zones.map(z =>
+      `<div class="zone"><strong>${z.label}</strong><p>${z.detail}</p></div>`
+    ).join("");
+  }
+
+  function toggleLayer(key, visible) {
+    if (!svgDoc) return;
+    const el = svgDoc.getElementById("layer-" + key);
+    if (el) el.classList.toggle("hidden-layer", !visible);
+  }
+
+  function selectTower(name) {
+    selectedTower = name;
+    updateSelection();
+  }
+
+  function updateSelection() {
+    towerList.querySelectorAll("button").forEach(btn => {
+      btn.classList.toggle("selected", btn.dataset.tower === selectedTower);
+    });
+
+    if (!selectedTower) {
+      towerDetail.innerHTML = '<span class="meta">Click a tower pin or name below</span>';
+    } else {
+      const t = DATA.towers.find(x => x.name === selectedTower);
+      if (t) {
+        towerDetail.innerHTML =
+          `<strong style="color:${t.color}">${t.name} Tower</strong>` +
+          `<div class="meta">${t.floors} delivery floors · ${t.deliveryMode} mode</div>` +
+          `<div class="meta" style="margin-top:0.35rem">GPS: ${t.latitude.toFixed(5)}, ${t.longitude.toFixed(5)}</div>`;
+      }
+    }
+
+    if (!svgDoc) return;
+    svgDoc.querySelectorAll(".tower-pin").forEach(g => {
+      const name = g.getAttribute("data-name");
+      const active = name === selectedTower;
+      const dimmed = selectedTower && !active;
+      g.classList.toggle("selected", active);
+      g.classList.toggle("dimmed", dimmed);
+    });
+  }
+
+  function wireSvg(svg) {
+    svgDoc = svg;
+    DATA.layers.forEach(key => toggleLayer(key, layers[key]));
+    svg.querySelectorAll(".tower-pin").forEach(g => {
+      g.addEventListener("click", e => {
+        e.stopPropagation();
+        const name = g.getAttribute("data-name");
+        selectTower(name === selectedTower ? null : name);
+      });
+    });
+    updateSelection();
+  }
+
+  const obj = document.getElementById("site-plan-object");
+  obj.addEventListener("load", () => {
+    try {
+      wireSvg(obj.contentDocument);
+    } catch (e) {
+      console.warn("Could not access SVG document:", e);
+    }
+  });
+
+  // Fallback: fetch SVG inline for file:// when object load fails
+  async function tryInlineSvg() {
+    if (svgDoc) return;
+    try {
+      const resp = await fetch("../HiltonHawaiianVillage-SitePlan.svg");
+      if (!resp.ok) return;
+      const text = await resp.text();
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = text.trim();
+      const svg = wrapper.querySelector("svg");
+      if (!svg) return;
+      svg.id = "site-plan-svg";
+      obj.replaceWith(svg);
+      wireSvg(svg);
+    } catch (_) {
+      /* file:// fetch blocked — object tag should still work for local SVG */
+    }
+  }
+
+  renderSidebar();
+  applyZoom();
+  setTimeout(tryInlineSvg, 300);
+})();
+  </script>
+</body>
+</html>

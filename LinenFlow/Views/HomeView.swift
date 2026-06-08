@@ -16,7 +16,10 @@ struct HomeView: View {
     @Query(sort: \DailyLog.createdAt, order: .reverse) private var logs: [DailyLog]
     @State private var savedConfirmation: String?
     @State private var hasAppeared = false
+    @AppStorage("isCustomProperty") private var isCustomProperty = false
     @State private var towerPickerExpanded = false
+    @State private var mapFocusTowerID: UUID?
+    @State private var lastMapPreviewAt: Date = .distantPast
     @State private var itemPickerExpanded = false
     @State private var draftSelectedItemIDs: Set<UUID> = []
     @State private var showClearConfirmation = false
@@ -36,14 +39,16 @@ struct HomeView: View {
                         .scrollDismissesKeyboard(.interactively)
                         .overlay {
                             if focusedItemID != nil {
-                                Color.black.opacity(0.32)
+                                Color.black.opacity(0.38)
                                     .ignoresSafeArea()
                                     .allowsHitTesting(false)
                                     .transition(.opacity)
+                                    .animation(KeyboardPinnedEditorMotion.lift, value: focusedItemID != nil)
                             }
                         }
                         .safeAreaInset(edge: .bottom, spacing: 0) {
                             bottomChrome
+                                .animation(KeyboardPinnedEditorMotion.lift, value: focusedItemID != nil)
                         }
                         .onChange(of: scrollTarget) { _, target in
                             guard let target else { return }
@@ -79,16 +84,17 @@ struct HomeView: View {
                 ShiftCommandCenterView()
             }
             .animation(.easeInOut(duration: 0.5), value: viewModel.selectedTower?.identityColorHex)
-            .animation(KeyboardPinnedEditorMotion.lift, value: focusedItemID != nil)
             .onAppear {
                 viewModel.refreshAvailable()
                 resetDraftSelectedItems()
                 hasAppeared = true
             }
         }
-        .onChange(of: viewModel.selectedTower?.id) { _, _ in
+        .onChange(of: viewModel.selectedTower?.id) { oldTowerID, newTowerID in
             resetDraftSelectedItems()
             itemPickerExpanded = false
+            guard let newTowerID, oldTowerID == nil else { return }
+            finishTowerPickerCollapse()
         }
         .onChange(of: deepLinkCoordinator.openDeliveryCommandCenter) { _, shouldOpen in
             guard shouldOpen else { return }
@@ -193,7 +199,7 @@ struct HomeView: View {
                             .font(.caption.weight(.bold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 11)
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 6)
                             .background(Color.cyan.opacity(0.78), in: Capsule())
                     }
                     .buttonStyle(.plain)
@@ -363,9 +369,82 @@ struct HomeView: View {
         return "\(itemCount) items · \(pieces) pcs · \(date)"
     }
 
+
+    private func previewTowerOnMap(_ tower: Tower) {
+        guard mapFocusTowerID != tower.id else { return }
+        let now = Date.now
+        guard now.timeIntervalSince(lastMapPreviewAt) >= 0.1 else { return }
+        lastMapPreviewAt = now
+        mapFocusTowerID = tower.id
+    }
+
+    private func selectTowerFromMap(_ tower: Tower) {
+        savedConfirmation = nil
+        mapFocusTowerID = tower.id
+        viewModel.selectTower(tower)
+    }
+
+    private func finishTowerPickerCollapse() {
+        withAnimation(.snappy(duration: 0.28)) {
+            towerPickerExpanded = false
+            mapFocusTowerID = nil
+        }
+    }
+
+    private var showsTowerEnvironmentMap: Bool {
+        !isCustomProperty && (towerPickerExpanded || viewModel.selectedTower == nil)
+    }
+
     private var towerPicker: some View {
+        Group {
+            if let tower = viewModel.selectedTower, !towerPickerExpanded {
+                collapsedTowerPicker(tower)
+            } else {
+                expandedTowerPicker
+            }
+        }
+    }
+
+    private func collapsedTowerPicker(_ tower: Tower) -> some View {
+        let color = Color(hex: tower.identityColorHex ?? "") ?? .blue
+
+        return HStack(spacing: 10) {
+            Image("tower_\(tower.name.lowercased())")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 34, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+            compactActiveFloorControl(tower)
+
+            Spacer(minLength: 8)
+
+            Button {
+                withAnimation(.snappy(duration: 0.28)) {
+                    towerPickerExpanded = true
+                    mapFocusTowerID = nil
+                }
+            } label: {
+                Label("Change", systemImage: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(color.opacity(0.75), in: Capsule())
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke((color).opacity(0.28), lineWidth: 1)
+        )
+    }
+
+    private var expandedTowerPicker: some View {
         PremiumCard(accentColor: selectedTowerColor) {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Tower")
                         .font(.headline)
@@ -373,81 +452,62 @@ struct HomeView: View {
                     Spacer()
                     if viewModel.selectedTower != nil && towerPickerExpanded {
                         Button("Done") {
-                            withAnimation(.snappy(duration: 0.28)) { towerPickerExpanded = false }
+                            finishTowerPickerCollapse()
                         }
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.7))
                     }
                 }
 
-                if let tower = viewModel.selectedTower, !towerPickerExpanded {
-                    // Compact chip — tower selected
-                    let color = Color(hex: tower.identityColorHex ?? "") ?? .blue
-                    HStack(spacing: 12) {
-                        Image("tower_\(tower.name.lowercased())")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 48, height: 62)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                if showsTowerEnvironmentMap {
+                    towerEnvironmentSection
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
 
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(tower.name)
-                                .font(.title3.weight(.bold))
-                                .foregroundStyle(.white)
-                            Text("\(tower.floorCount) active floors")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.6))
-                            Text(viewModel.deliveryUnitIsBundles ? "Bundle delivery" : "Piece distribution")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(color)
-                        }
-
-                        Spacer()
-
-                        Button {
-                            withAnimation(.snappy(duration: 0.28)) { towerPickerExpanded = true }
-                        } label: {
-                            Label("Change", systemImage: "chevron.down")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(color.opacity(0.75), in: Capsule())
-                        }
-                    }
-                    activeFloorControl(tower)
-                } else {
-                    // Expanded grid
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(viewModel.towerDisplayGroups) { section in
-                            VStack(alignment: .leading, spacing: 8) {
-                                towerGroupHeader(section.group, count: section.towers.count)
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)], spacing: 8) {
-                                    ForEach(section.towers, id: \.id) { tower in
-                                        Button {
-                                            savedConfirmation = nil
-                                            viewModel.selectTower(tower)
-                                            withAnimation(.snappy(duration: 0.24)) { towerPickerExpanded = false }
-                                        } label: {
-                                            towerButtonLabel(tower)
-                                        }
-                                        .buttonStyle(.plain)
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(viewModel.towerDisplayGroups) { section in
+                        VStack(alignment: .leading, spacing: 6) {
+                            towerGroupHeader(section.group, count: section.towers.count)
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 78), spacing: 6)], spacing: 6) {
+                                ForEach(section.towers, id: \.id) { tower in
+                                    Button {
+                                        selectTowerFromMap(tower)
+                                    } label: {
+                                        towerButtonLabel(tower, isPreviewing: mapFocusTowerID == tower.id)
                                     }
+                                    .buttonStyle(.plain)
+                                    .simultaneousGesture(
+                                        DragGesture(minimumDistance: 0)
+                                            .onChanged { _ in previewTowerOnMap(tower) }
+                                    )
                                 }
                             }
                         }
                     }
+                }
 
-                    if let tower = viewModel.selectedTower {
-                        activeFloorControl(tower)
-                    }
+                if let tower = viewModel.selectedTower {
+                    activeFloorControl(tower)
                 }
             }
+            .animation(.snappy(duration: 0.28), value: showsTowerEnvironmentMap)
         }
     }
 
-    private func towerButtonLabel(_ tower: Tower) -> some View {
-        let isSelected = tower.id == viewModel.selectedTower?.id
+    private var towerEnvironmentSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            TowerPickerEnvironmentView(
+                towers: viewModel.availableTowers,
+                selectedTower: viewModel.selectedTower,
+                focusTowerID: mapFocusTowerID,
+                isExpanded: true,
+                hint: mapFocusTowerID == nil ? "Drag a tower to preview" : "Previewing tower location"
+            )
+        }
+    }
+
+    private func towerButtonLabel(_ tower: Tower, isPreviewing: Bool = false) -> some View {
+        let isSelected = tower.id == viewModel.selectedTower?.id || isPreviewing
         let color = Color(hex: tower.identityColorHex ?? "") ?? .blue
         let iconName = "tower_\(tower.name.lowercased())"
         return VStack(spacing: 5) {
@@ -456,7 +516,7 @@ struct HomeView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(maxWidth: .infinity)
-                    .frame(height: 80)
+                    .frame(height: 64)
                     .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 if isSelected {
@@ -487,25 +547,47 @@ struct HomeView: View {
         .shadow(color: isSelected ? color.opacity(0.22) : .clear, radius: 8, y: 3)
     }
 
+    private func compactActiveFloorControl(_ tower: Tower) -> some View {
+        HStack(spacing: 6) {
+            Text("Floors")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.58))
+            if let protectedFloorCount = TowerOperationalPolicy.confirmedDeliveryFloorCount(for: tower) {
+                Label("\(protectedFloorCount)", systemImage: "lock.fill")
+                    .font(.subheadline.weight(.bold).monospacedDigit())
+                    .foregroundStyle(.white)
+                    .labelStyle(.titleAndIcon)
+            } else {
+                Stepper(value: floorCountBinding(for: tower), in: 1...80) {
+                    Text("\(tower.floorCount)")
+                        .font(.subheadline.weight(.bold).monospacedDigit())
+                        .foregroundStyle(.white)
+                        .frame(minWidth: 24, alignment: .trailing)
+                }
+                .tint(.orange)
+            }
+        }
+    }
+
     private func activeFloorControl(_ tower: Tower) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "hammer.fill")
                 .font(.subheadline)
                 .foregroundStyle(.orange)
             Text("Active floors")
-                .font(.subheadline.weight(.semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.78))
             Spacer()
             if let protectedFloorCount = TowerOperationalPolicy.confirmedDeliveryFloorCount(for: tower) {
                 Label("\(protectedFloorCount)", systemImage: "lock.fill")
-                    .font(.title3.weight(.bold).monospacedDigit())
+                    .font(.headline.weight(.bold).monospacedDigit())
                     .foregroundStyle(.white)
                     .labelStyle(.titleAndIcon)
                     .frame(minWidth: 48, alignment: .trailing)
             } else {
                 Stepper(value: floorCountBinding(for: tower), in: 1...80) {
                     Text("\(tower.floorCount)")
-                        .font(.title3.weight(.bold).monospacedDigit())
+                        .font(.headline.weight(.bold).monospacedDigit())
                         .foregroundStyle(.white)
                         .frame(minWidth: 28, alignment: .trailing)
                 }
@@ -764,9 +846,15 @@ struct HomeView: View {
                     )
                 )
         } else {
-            linenItemCard(for: item, isActiveEditor: false)
+            EquatableLinenListCard(
+                item: item,
+                entry: viewModel.receivingEntries.last { $0.itemName == item.name },
+                summary: viewModel.calculationSummaries.first { $0.itemName == item.name },
+                distributionRows: viewModel.deliveryFloorDistributions.filter { $0.itemName == item.name },
+                unitIsBundles: viewModel.deliveryUnitIsBundles,
+                onEditRequested: { beginEditing(item) }
+            )
                 .id(listCardID(for: item))
-                .opacity(focusedItemID == nil ? 1 : 0.42)
                 .transition(
                     .asymmetric(
                         insertion: KeyboardPinnedEditorMotion.listCardLiftInsertionTransition,
@@ -1040,3 +1128,37 @@ struct HomeView: View {
         }
     }
 }
+
+private struct EquatableLinenListCard: View, Equatable {
+    @Environment(FlowViewModel.self) private var viewModel
+
+    let item: LinenItem
+    let entry: ReceivingEntry?
+    let summary: CalculationSummary?
+    let distributionRows: [FloorDistributionRow]
+    let unitIsBundles: Bool
+    let onEditRequested: () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.item.id == rhs.item.id
+            && lhs.entry?.calculatedPieces == rhs.entry?.calculatedPieces
+            && lhs.summary?.receivedPieces == rhs.summary?.receivedPieces
+            && lhs.summary?.status == rhs.summary?.status
+            && lhs.distributionRows.count == rhs.distributionRows.count
+            && lhs.unitIsBundles == rhs.unitIsBundles
+    }
+
+    var body: some View {
+        OneScreenLinenItemCard(
+            item: item,
+            entry: entry,
+            summary: summary,
+            distributionRows: distributionRows,
+            unitIsBundles: unitIsBundles,
+            onEditRequested: onEditRequested
+        ) { pieces in
+            viewModel.addOrUpdateReceivedPieces(item: item, pieces: pieces)
+        }
+    }
+}
+

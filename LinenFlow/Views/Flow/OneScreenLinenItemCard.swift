@@ -107,7 +107,8 @@ struct OneScreenLinenItemCard: View {
                 .onTapGesture {
                     onEditRequested?()
                 }
-                .onChange(of: pieces) { _, newValue in
+                .onChange(of: pieces) { oldValue, newValue in
+                    guard oldValue != newValue else { return }
                     onPiecesChange(newValue)
                 }
 
@@ -562,11 +563,14 @@ struct OneScreenLinenItemCard: View {
 }
 
 private struct MergedFloorDisplayRange: Identifiable {
-    let id = UUID()
     let suggestedValue: Int
     let isPlusOne: Bool
     var segments: [String]
     var floorCount: Int
+
+    var id: String {
+        "\(suggestedValue)-\(isPlusOne)-\(segments.joined(separator: ","))"
+    }
 
     var label: String {
         let joined = segments.joined(separator: ", ")

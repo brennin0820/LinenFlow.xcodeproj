@@ -35,8 +35,8 @@ enum DefaultData {
             estimatedFloorHeightMeters: 3.17,
             floorDetectionToleranceMeters: 0.45,
             floorMovementConfidenceThresholdMeters: 1.2,
-            latitude: nil,
-            longitude: nil,
+            latitude: 21.28158,
+            longitude: -157.83809,
             confidence: "High",
             notes: "Public source: 114m / 36 floors ≈ 3.17m per floor."
         ),
@@ -53,8 +53,8 @@ enum DefaultData {
             estimatedFloorHeightMeters: 3.20,
             floorDetectionToleranceMeters: 0.45,
             floorMovementConfidenceThresholdMeters: 1.2,
-            latitude: nil,
-            longitude: nil,
+            latitude: 21.28472,
+            longitude: -157.83862,
             confidence: "Medium",
             notes: "Public source implied ~3.96m/floor, likely including podium/mechanical structure. Safer sensing default is 3.20m."
         ),
@@ -89,17 +89,17 @@ enum DefaultData {
             estimatedFloorHeightMeters: 3.10,
             floorDetectionToleranceMeters: 0.45,
             floorMovementConfidenceThresholdMeters: 1.2,
-            latitude: nil,
-            longitude: nil,
+            latitude: 21.28274,
+            longitude: -157.83638,
             confidence: "Low",
-            notes: "Exact public architectural height not verified."
+            notes: "Coordinates mapped from Hilton Hawaiian Village satellite reference."
         ),
         "Diamond": .init(
             estimatedFloorHeightMeters: 3.10,
             floorDetectionToleranceMeters: 0.45,
             floorMovementConfidenceThresholdMeters: 1.2,
-            latitude: nil,
-            longitude: nil,
+            latitude: 21.28108,
+            longitude: -157.83558,
             confidence: "Low",
             notes: "Exact public architectural height not verified. App currently uses operational 15 delivery floors."
         ),

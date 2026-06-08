@@ -30,6 +30,9 @@ struct SettingsView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     settingsOverviewSection
+                    if !isCustomProperty {
+                        PropertyMapView(towers: towers)
+                    }
                     appearanceSection
                     propertyProfileSection
 

@@ -7,12 +7,8 @@ enum KeyboardPinnedEditorMotion {
 
     static var panelLiftTransition: AnyTransition {
         .asymmetric(
-            insertion: .move(edge: .bottom)
-                .combined(with: .opacity)
-                .combined(with: .scale(scale: 0.94, anchor: .bottom)),
-            removal: .move(edge: .bottom)
-                .combined(with: .opacity)
-                .combined(with: .scale(scale: 0.96, anchor: .bottom))
+            insertion: .move(edge: .bottom).combined(with: .opacity),
+            removal: .move(edge: .bottom).combined(with: .opacity)
         )
     }
 
@@ -21,8 +17,7 @@ enum KeyboardPinnedEditorMotion {
     }
 
     static var listCardLiftRemovalTransition: AnyTransition {
-        .scale(scale: 0.92, anchor: .center)
-            .combined(with: .opacity)
+        .opacity
     }
 
     static var listCardLiftInsertionTransition: AnyTransition {
@@ -30,8 +25,7 @@ enum KeyboardPinnedEditorMotion {
     }
 
     static var placeholderLiftInsertionTransition: AnyTransition {
-        .scale(scale: 0.96, anchor: .center)
-            .combined(with: .opacity)
+        .opacity
     }
 
     static var placeholderLiftRemovalTransition: AnyTransition {
@@ -61,8 +55,6 @@ struct KeyboardEditingPlaceholder: View {
     let itemName: String
     let accentColor: Color
 
-    @State private var borderPulse = false
-
     var body: some View {
         PremiumCard(accentColor: accentColor, style: .standard) {
             HStack(spacing: 10) {
@@ -88,13 +80,11 @@ struct KeyboardEditingPlaceholder: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(accentColor.opacity(borderPulse ? 0.5 : 0.22), lineWidth: 1.5)
-                .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: borderPulse)
+                .stroke(accentColor.opacity(0.32), lineWidth: 1.5)
         }
         .opacity(0.58)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
-        .onAppear { borderPulse = true }
     }
 }
 

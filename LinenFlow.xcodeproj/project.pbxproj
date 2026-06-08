@@ -77,9 +77,9 @@
 			path = LinenFlow;
 			sourceTree = "<group>";
 		};
-		AABBCCDDEEFF112233440002 /* HimmerFlowTests */ = {
+		AABBCCDDEEFF112233440002 /* LinenFlowTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = HimmerFlowTests;
+			path = LinenFlowTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -125,7 +125,7 @@
 			children = (
 				6265ADCF2FC3B33D0063599E /* TestPlan.xctestplan */,
 				62B430B82FB9670C000654DB /* LinenFlow */,
-				AABBCCDDEEFF112233440002 /* HimmerFlowTests */,
+				AABBCCDDEEFF112233440002 /* LinenFlowTests */,
 				629AA0A42FBFC76C0077750C /* LinenFlow Widget */,
 				629AA09F2FBFC76B0077750C /* Frameworks */,
 				62B430B72FB9670C000654DB /* Products */,
@@ -205,7 +205,7 @@
 				AABBCCDDEEFF112233440007 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				AABBCCDDEEFF112233440002 /* HimmerFlowTests */,
+				AABBCCDDEEFF112233440002 /* LinenFlowTests */,
 			);
 			name = HimmerFlowTests;
 			packageProductDependencies = (
@@ -532,8 +532,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LinenFlowURLTypes.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = HimmerFlow;
 				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = HimmerFlow;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -575,8 +575,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LinenFlowURLTypes.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = HimmerFlow;
 				INFOPLIST_KEY_CADisableMinimumFrameDurationOnPhone = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = HimmerFlow;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

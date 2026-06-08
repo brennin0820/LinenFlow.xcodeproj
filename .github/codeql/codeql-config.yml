@@ -1,0 +1,13 @@
+name: LinenFlow CodeQL config
+
+paths:
+  - LinenFlow
+  - LinenFlowTests
+  - LinenFlow Widget
+  - LinenFlowWidgets
+  - android/app/src
+
+paths-ignore:
+  - '**/*.xcassets/**'
+  - '**/build/**'
+  - '**/.build/**'
