@@ -16,40 +16,30 @@ struct PremiumCard<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if theme.showsCardAccentStrip, let accentColor {
-                Rectangle()
-                    .fill(
-                        LinearGradient(
-                            colors: [accentColor, accentColor.opacity(0.55)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(height: 4)
-            }
             content()
                 .padding(responsivePadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(cardFill, in: RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous))
+        .clipShape(cardShape)
+        .contentShape(cardShape)
         .overlay(
-            RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous)
-                .stroke(borderFill, lineWidth: 1)
+            cardShape
+                .stroke(borderFill, lineWidth: theme.isPractical ? 1 : 0.8)
         )
         .overlay(alignment: .top) {
-            if theme.usesGlassCardFill {
-                RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous)
-                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    .blendMode(.plusLighter)
+            if theme.showsCardAccentStrip, shouldShowAccentHairline, let accentColor {
+                Capsule()
+                    .fill(accentColor.opacity(0.34))
+                    .frame(height: 1)
+                    .padding(.horizontal, theme.cardPadding)
             }
         }
         .shadow(
-            color: theme.showsCardShadow ? Color.black.opacity(0.22) : .clear,
-            radius: theme.showsCardShadow ? 12 : 0,
-            y: theme.showsCardShadow ? 6 : 0
+            color: theme.showsCardShadow ? Color.black.opacity(0.14) : .clear,
+            radius: theme.showsCardShadow ? 8 : 0,
+            y: theme.showsCardShadow ? 4 : 0
         )
     }
 
@@ -64,6 +54,22 @@ struct PremiumCard<Content: View>: View {
         return padding
     }
 
+    private var cardShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous)
+    }
+
+    private var shouldShowAccentHairline: Bool {
+        if theme.isPractical { return false }
+
+        switch style {
+        case .fullAccent:
+            return true
+        case .standard, .solid:
+            return false
+        }
+    }
+
+
     private var cardFill: LinearGradient {
         if theme.isPractical {
             let fill = practicalCardColor
@@ -77,9 +83,9 @@ struct PremiumCard<Content: View>: View {
             if let accentColor {
                 return LinearGradient(
                     colors: [
-                        accentColor.opacity(0.34),
                         accentColor.opacity(0.20),
-                        accentColor.opacity(0.10)
+                        accentColor.opacity(0.105),
+                        Color.white.opacity(0.055)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -89,9 +95,9 @@ struct PremiumCard<Content: View>: View {
         case .standard:
             return LinearGradient(
                 colors: [
-                    (accentColor ?? .white).opacity(accentColor == nil ? 0.075 : 0.12),
-                    Color.white.opacity(0.055),
-                    Color(red: 0.11, green: 0.13, blue: 0.16).opacity(0.18)
+                    Color.white.opacity(0.082),
+                    (accentColor ?? .white).opacity(accentColor == nil ? 0.035 : 0.052),
+                    Color.white.opacity(0.032)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -120,20 +126,20 @@ struct PremiumCard<Content: View>: View {
         case .solid:
             if let accentColor {
                 return LinearGradient(
-                    colors: [accentColor.opacity(0.45), accentColor.opacity(0.18)],
+                    colors: [accentColor.opacity(0.32), Color.white.opacity(0.08)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             }
             return LinearGradient(
-                colors: [Color.white.opacity(0.18), Color.white.opacity(0.06)],
+                colors: [Color.white.opacity(0.14), Color.white.opacity(0.055)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         case .fullAccent:
             if let accentColor {
                 return LinearGradient(
-                    colors: [accentColor.opacity(0.6), accentColor.opacity(0.28)],
+                    colors: [accentColor.opacity(0.48), Color.white.opacity(0.11)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -142,8 +148,8 @@ struct PremiumCard<Content: View>: View {
         case .standard:
             return LinearGradient(
                 colors: [
-                    (accentColor ?? .white).opacity(accentColor == nil ? 0.12 : 0.34),
-                    Color.white.opacity(0.075)
+                    (accentColor ?? .white).opacity(accentColor == nil ? 0.13 : 0.24),
+                    Color.white.opacity(0.07)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
