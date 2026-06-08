@@ -28,36 +28,16 @@ struct HomeView: View {
     @State private var freshEditingItemID: UUID?
     @State private var focusRequest = 0
     @State private var focusReleaseRequest = 0
-    @State private var scrollTarget: UUID?
     @State private var showDeliveryCommandCenter = false
 
     var body: some View {
         NavigationStack(path: $flowPath) {
             AppBackground(accentColor: selectedTowerColor) {
-                ScrollViewReader { proxy in
-                    ScrollView { flowContent }
-                        .scrollDismissesKeyboard(.interactively)
-                        .overlay {
-                            if focusedItemID != nil {
-                                Color.black.opacity(0.38)
-                                    .ignoresSafeArea()
-                                    .allowsHitTesting(false)
-                                    .transition(.opacity)
-                                    .animation(KeyboardPinnedEditorMotion.lift, value: focusedItemID != nil)
-                            }
-                        }
-                        .safeAreaInset(edge: .bottom, spacing: 0) {
-                            bottomChrome
-                                .animation(KeyboardPinnedEditorMotion.lift, value: focusedItemID != nil)
-                        }
-                        .onChange(of: scrollTarget) { _, target in
-                            guard let target else { return }
-                            withAnimation(.easeInOut(duration: 0.28)) {
-                                proxy.scrollTo(target, anchor: .top)
-                            }
-                            scrollTarget = nil
-                        }
-                }
+                ScrollView { flowContent }
+                    .scrollDismissesKeyboard(.interactively)
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        bottomChrome
+                    }
             }
             .navigationTitle(viewModel.selectedTower?.name ?? "Linen Delivery")
             .navigationBarTitleDisplayMode(.inline)
@@ -848,91 +828,39 @@ struct HomeView: View {
 
     @ViewBuilder
     private var bottomChrome: some View {
-        if let focusedItem {
-            pinnedEditingPanel(for: focusedItem)
-        } else {
-            shiftCommanderStartButton
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 8)
-                .background(.ultraThinMaterial)
-                .transition(KeyboardPinnedEditorMotion.panelLiftTransition)
-        }
+        shiftCommanderStartButton
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+            .background(.ultraThinMaterial)
     }
 
-    private func pinnedEditingPanel(for item: LinenItem) -> some View {
-        KeyboardPinnedPanel(
-            itemName: item.name,
-            editingIndex: editingIndex(for: item),
-            editingTotal: orderedEditableItems.count,
-            contentTransition: KeyboardPinnedEditorMotion.panelCrossfadeTransition
-        ) {
-            linenItemCard(for: item, isActiveEditor: true)
-                .id(pinnedCardID(for: item))
-        }
-    }
-
-    private func editingIndex(for item: LinenItem) -> Int {
-        orderedEditableItems.firstIndex(where: { $0.id == item.id }) ?? 0
-    }
-
-    @ViewBuilder
     private func itemCard(for item: LinenItem) -> some View {
-        if focusedItemID == item.id {
-            editingItemPlaceholder(for: item)
-                .id(listPlaceholderID(for: item))
-                .transition(
-                    .asymmetric(
-                        insertion: KeyboardPinnedEditorMotion.placeholderLiftInsertionTransition,
-                        removal: KeyboardPinnedEditorMotion.listCrossfadeTransition
-                    )
-                )
-        } else {
-            EquatableLinenListCard(
-                item: item,
-                entry: viewModel.receivingEntries.last { $0.itemName == item.name },
-                summary: viewModel.calculationSummaries.first { $0.itemName == item.name },
-                distributionRows: viewModel.deliveryFloorDistributions.filter { $0.itemName == item.name },
-                unitIsBundles: viewModel.deliveryUnitIsBundles,
-                hasSupplyAnomaly: viewModel.supplyAnomalies.contains { $0.itemName == item.name },
-                onEditRequested: { beginEditing(item) }
-            )
-                .id(listCardID(for: item))
-                .transition(
-                    .asymmetric(
-                        insertion: KeyboardPinnedEditorMotion.listCardLiftInsertionTransition,
-                        removal: KeyboardPinnedEditorMotion.listCardLiftRemovalTransition
-                    )
-                )
-        }
-    }
-
-    private func editingItemPlaceholder(for item: LinenItem) -> some View {
-        KeyboardEditingPlaceholder(
-            itemName: item.name,
-            accentColor: LinenIconLibrary.color(forItem: item.name)
-        )
-    }
-
-    private func linenItemCard(for item: LinenItem, isActiveEditor: Bool) -> some View {
-        OneScreenLinenItemCard(
+        let isFocused = focusedItemID == item.id
+        let isLockedElsewhere = focusedItemID != nil && !isFocused
+        return EquatableLinenListCard(
             item: item,
             entry: viewModel.receivingEntries.last { $0.itemName == item.name },
             summary: viewModel.calculationSummaries.first { $0.itemName == item.name },
             distributionRows: viewModel.deliveryFloorDistributions.filter { $0.itemName == item.name },
             unitIsBundles: viewModel.deliveryUnitIsBundles,
-            focusRequest: isActiveEditor ? focusRequest : 0,
-            focusReleaseRequest: isActiveEditor ? focusReleaseRequest : 0,
-            isCompactPinned: isActiveEditor,
-            onEditRequested: {
-                beginEditing(item)
-            },
+            hasSupplyAnomaly: viewModel.supplyAnomalies.contains { $0.itemName == item.name },
+            isFocused: isFocused,
+            focusRequest: isFocused ? focusRequest : 0,
+            focusReleaseRequest: isFocused ? focusReleaseRequest : 0,
+            onEditRequested: { activateEditing(item) },
             onFocusChange: { focused in
-                handleItemFocusChange(item: item, focused: focused, isActiveEditor: isActiveEditor)
+                handleItemFocusChange(item: item, focused: focused)
             }
-        ) { pieces in
-            savedConfirmation = nil
-            viewModel.addOrUpdateReceivedPieces(item: item, pieces: pieces)
+        )
+        .id(item.id)
+        .opacity(isLockedElsewhere ? 0.42 : 1)
+        .allowsHitTesting(!isLockedElsewhere)
+        .overlay {
+            if isFocused {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(LinenIconLibrary.color(forItem: item.name).opacity(0.55), lineWidth: 2)
+            }
         }
     }
 
@@ -986,69 +914,49 @@ struct HomeView: View {
 
         if wasFresh && nowFilled, let next = nextUnfilledItem(after: focusedItem) {
             KeyboardEditingHaptics.success()
-            withAnimation(KeyboardPinnedEditorMotion.crossfade) {
-                focusedItemID = next.id
-                freshEditingItemID = next.id
-                focusRequest += 1
-                scrollTarget = next.id
-            }
+            focusedItemID = next.id
+            freshEditingItemID = next.id
+            focusRequest += 1
         } else {
             endEditing()
             freshEditingItemID = nil
         }
     }
 
-    private func beginEditing(_ item: LinenItem) {
-        withAnimation(KeyboardPinnedEditorMotion.lift) {
-            focusedItemID = item.id
-            freshEditingItemID = entryHasValue(for: item) ? nil : item.id
+    private func activateEditing(_ item: LinenItem) {
+        if let lockedID = focusedItemID, lockedID != item.id {
             focusRequest += 1
-            scrollTarget = item.id
+            return
         }
+        if focusedItemID == item.id {
+            focusRequest += 1
+            return
+        }
+        focusedItemID = item.id
+        freshEditingItemID = entryHasValue(for: item) ? nil : item.id
+        focusRequest += 1
     }
 
-    private func listCardID(for item: LinenItem) -> String {
-        "list-card-\(item.id.uuidString)"
-    }
-
-    private func listPlaceholderID(for item: LinenItem) -> String {
-        "list-placeholder-\(item.id.uuidString)"
-    }
-
-    private func pinnedCardID(for item: LinenItem) -> String {
-        "pinned-card-\(item.id.uuidString)"
-    }
-
-    private func handleItemFocusChange(item: LinenItem, focused: Bool, isActiveEditor: Bool) {
-        if focused {
-            if focusedItemID != item.id {
-                withAnimation(KeyboardPinnedEditorMotion.lift) {
-                    focusedItemID = item.id
-                    freshEditingItemID = entryHasValue(for: item) ? nil : item.id
-                    focusRequest += 1
-                    scrollTarget = item.id
-                }
-            } else if !isActiveEditor {
-                withAnimation(KeyboardPinnedEditorMotion.lift) {
-                    focusRequest += 1
-                }
+    private func handleItemFocusChange(item: LinenItem, focused: Bool) {
+        guard focused else { return }
+        if let lockedID = focusedItemID {
+            if lockedID != item.id {
+                focusRequest += 1
             }
-        } else if isActiveEditor, focusedItemID == item.id {
-            endEditing()
+            return
         }
+        activateEditing(item)
     }
 
     private func endEditing() {
-        withAnimation(KeyboardPinnedEditorMotion.dismiss) {
-            focusReleaseRequest += 1
-            focusedItemID = nil
-            freshEditingItemID = nil
-        }
+        focusReleaseRequest += 1
+        focusedItemID = nil
+        freshEditingItemID = nil
     }
 
     private func canMoveToAdjacentItem(offset: Int) -> Bool {
-        guard let focusedItemID,
-              let index = orderedEditableItems.firstIndex(where: { $0.id == focusedItemID }) else {
+        guard let currentID = focusedItemID,
+              let index = orderedEditableItems.firstIndex(where: { $0.id == currentID }) else {
             return false
         }
         let nextIndex = index + offset
@@ -1056,19 +964,16 @@ struct HomeView: View {
     }
 
     private func moveToAdjacentItem(offset: Int) {
-        guard let focusedItemID,
-              let index = orderedEditableItems.firstIndex(where: { $0.id == focusedItemID }) else {
+        guard let currentID = focusedItemID,
+              let index = orderedEditableItems.firstIndex(where: { $0.id == currentID }) else {
             return
         }
         let nextIndex = index + offset
         guard orderedEditableItems.indices.contains(nextIndex) else { return }
         let nextItem = orderedEditableItems[nextIndex]
-        withAnimation(KeyboardPinnedEditorMotion.crossfade) {
-            self.focusedItemID = nextItem.id
-            freshEditingItemID = entryHasValue(for: nextItem) ? nil : nextItem.id
-            focusRequest += 1
-            scrollTarget = nextItem.id
-        }
+        focusedItemID = nextItem.id
+        freshEditingItemID = entryHasValue(for: nextItem) ? nil : nextItem.id
+        focusRequest += 1
     }
 
     private func towerGroupHeader(_ group: TowerDisplayGroup, count: Int) -> some View {
@@ -1181,7 +1086,11 @@ private struct EquatableLinenListCard: View, Equatable {
     let distributionRows: [FloorDistributionRow]
     let unitIsBundles: Bool
     let hasSupplyAnomaly: Bool
+    let isFocused: Bool
+    let focusRequest: Int
+    let focusReleaseRequest: Int
     let onEditRequested: () -> Void
+    let onFocusChange: (Bool) -> Void
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.item.id == rhs.item.id
@@ -1191,6 +1100,9 @@ private struct EquatableLinenListCard: View, Equatable {
             && lhs.distributionRows.count == rhs.distributionRows.count
             && lhs.unitIsBundles == rhs.unitIsBundles
             && lhs.hasSupplyAnomaly == rhs.hasSupplyAnomaly
+            && lhs.isFocused == rhs.isFocused
+            && (!lhs.isFocused || lhs.focusRequest == rhs.focusRequest)
+            && (!lhs.isFocused || lhs.focusReleaseRequest == rhs.focusReleaseRequest)
     }
 
     var body: some View {
@@ -1200,7 +1112,11 @@ private struct EquatableLinenListCard: View, Equatable {
             summary: summary,
             distributionRows: distributionRows,
             unitIsBundles: unitIsBundles,
-            onEditRequested: onEditRequested
+            focusRequest: focusRequest,
+            focusReleaseRequest: focusReleaseRequest,
+            isCompactPinned: false,
+            onEditRequested: onEditRequested,
+            onFocusChange: onFocusChange
         ) { pieces in
             viewModel.addOrUpdateReceivedPieces(item: item, pieces: pieces)
         }

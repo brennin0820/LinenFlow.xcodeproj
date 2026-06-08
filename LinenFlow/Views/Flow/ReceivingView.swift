@@ -4,7 +4,6 @@ struct ReceivingView: View {
     @Environment(FlowViewModel.self) private var viewModel
     @Binding var path: NavigationPath
 
-    @State private var scrollTarget: UUID?
     @State private var expandedReceivingItemID: UUID?
     @State private var freshExpansionItemID: UUID?
     @State private var focusRequest = 0
@@ -12,72 +11,50 @@ struct ReceivingView: View {
 
     var body: some View {
         AppBackground(accentColor: viewModel.selectedTower.flatMap { Color(hex: $0.identityColorHex ?? "") }) {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: 16) {
-                        FlowProgressHeader(current: .receive)
+            ScrollView {
+                VStack(spacing: 16) {
+                    FlowProgressHeader(current: .receive)
 
-                        if let tower = viewModel.selectedTower {
-                            towerHeader(tower)
-                        }
+                    if let tower = viewModel.selectedTower {
+                        towerHeader(tower)
+                    }
 
-                        receivingDashboard
+                    receivingDashboard
 
-                        SectionHeader(
-                            title: "Receive linen",
-                            subtitle: "Enter what physically arrived. Arithmetic like 245*2 works."
-                        )
+                    SectionHeader(
+                        title: "Receive linen",
+                        subtitle: "Enter what physically arrived. Arithmetic like 245*2 works."
+                    )
 
-                        if !viewModel.validationWarnings.isEmpty {
-                            WarningCard(warnings: viewModel.validationWarnings)
-                        }
+                    if !viewModel.validationWarnings.isEmpty {
+                        WarningCard(warnings: viewModel.validationWarnings)
+                    }
 
-                        LazyVStack(alignment: .leading, spacing: 14) {
-                            ForEach(viewModel.itemDisplayGroups(for: viewModel.selectedTower)) { section in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    ReceivingItemGroupHeader(group: section.group, count: section.items.count)
-                                    ForEach(section.items, id: \.id) { item in
-                                        receivingItemCard(for: item)
-                                            .id(item.id)
-                                    }
+                    LazyVStack(alignment: .leading, spacing: 14) {
+                        ForEach(viewModel.itemDisplayGroups(for: viewModel.selectedTower)) { section in
+                            VStack(alignment: .leading, spacing: 8) {
+                                ReceivingItemGroupHeader(group: section.group, count: section.items.count)
+                                ForEach(section.items, id: \.id) { item in
+                                    receivingItemCard(for: item)
+                                        .id(item.id)
                                 }
                             }
                         }
+                    }
 
-                        Spacer(minLength: 24)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, expandedReceivingItemID == nil ? 100 : 24)
+                    Spacer(minLength: 24)
                 }
-                .scrollDismissesKeyboard(.interactively)
-                .overlay {
-                    if expandedReceivingItemID != nil {
-                        Color.black.opacity(0.32)
-                            .ignoresSafeArea()
-                            .allowsHitTesting(false)
-                            .transition(.opacity)
-                    }
-                }
-                .onChange(of: scrollTarget) { _, target in
-                    guard let target else { return }
-                    withAnimation(.easeInOut(duration: 0.28)) {
-                        proxy.scrollTo(target, anchor: .top)
-                    }
-                    scrollTarget = nil
-                }
-                .onChange(of: expandedReceivingItemID) { _, itemID in
-                    guard let itemID else { return }
-                    scrollTarget = itemID
-                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 100)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             receivingBottomChrome
         }
         .navigationTitle("Receive")
         .navigationBarTitleDisplayMode(.inline)
-        .animation(KeyboardPinnedEditorMotion.lift, value: expandedReceivingItemID != nil)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 receivingEditingKeyboardBar
@@ -104,79 +81,40 @@ struct ReceivingView: View {
 
     @ViewBuilder
     private var receivingBottomChrome: some View {
-        if let expandedReceivingItemID,
-           let item = orderedItems.first(where: { $0.id == expandedReceivingItemID }) {
-            pinnedReceivingPanel(for: item)
-        } else {
-            StickyBottomActionBar {
-                PrimaryActionButton(
-                    title: "Review Received Pieces",
-                    systemImage: "checklist",
-                    isEnabled: !viewModel.receivingEntries.isEmpty
-                ) {
-                    path.append(FlowStep.review)
+        StickyBottomActionBar {
+            PrimaryActionButton(
+                title: "Review Received Pieces",
+                systemImage: "checklist",
+                isEnabled: !viewModel.receivingEntries.isEmpty
+            ) {
+                path.append(FlowStep.review)
+            }
+        }
+    }
+
+    private func receivingItemCard(for item: LinenItem) -> some View {
+        let isExpanded = expandedReceivingItemID == item.id
+        let isLockedElsewhere = expandedReceivingItemID != nil && !isExpanded
+        return makeReceivingCard(for: item, isExpanded: isExpanded)
+            .opacity(isLockedElsewhere ? 0.42 : 1)
+            .allowsHitTesting(!isLockedElsewhere)
+            .overlay {
+                if isExpanded {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(LinenIconLibrary.color(forItem: item.name).opacity(0.55), lineWidth: 2)
                 }
             }
-            .transition(KeyboardPinnedEditorMotion.panelLiftTransition)
-        }
     }
 
-    @ViewBuilder
-    private func receivingItemCard(for item: LinenItem) -> some View {
-        if expandedReceivingItemID == item.id {
-            receivingItemPlaceholder(for: item)
-                .id(listPlaceholderID(for: item))
-                .transition(
-                    .asymmetric(
-                        insertion: KeyboardPinnedEditorMotion.placeholderLiftInsertionTransition,
-                        removal: KeyboardPinnedEditorMotion.listCrossfadeTransition
-                    )
-                )
-        } else {
-            makeReceivingCard(for: item, isActiveEditor: false)
-                .id(listCardID(for: item))
-                .opacity(expandedReceivingItemID == nil ? 1 : 0.42)
-                .transition(
-                    .asymmetric(
-                        insertion: KeyboardPinnedEditorMotion.listCardLiftInsertionTransition,
-                        removal: KeyboardPinnedEditorMotion.listCardLiftRemovalTransition
-                    )
-                )
-        }
-    }
-
-    private func pinnedReceivingPanel(for item: LinenItem) -> some View {
-        KeyboardPinnedPanel(
-            itemName: item.name,
-            editingIndex: editingIndex(for: item),
-            editingTotal: orderedItems.count,
-            contentTransition: KeyboardPinnedEditorMotion.panelCrossfadeTransition
-        ) {
-            makeReceivingCard(for: item, isActiveEditor: true)
-                .id(pinnedCardID(for: item))
-        }
-    }
-
-    private func editingIndex(for item: LinenItem) -> Int {
-        orderedItems.firstIndex(where: { $0.id == item.id }) ?? 0
-    }
-
-    private func receivingItemPlaceholder(for item: LinenItem) -> some View {
-        KeyboardEditingPlaceholder(
-            itemName: item.name,
-            accentColor: LinenIconLibrary.color(forItem: item.name)
-        )
-    }
-
-    private func makeReceivingCard(for item: LinenItem, isActiveEditor: Bool) -> some View {
+    private func makeReceivingCard(for item: LinenItem, isExpanded: Bool) -> some View {
         ItemReceivingCard(
             item: item,
             entry: viewModel.receivingEntries.first(where: { $0.itemName == item.name }),
             usesParSystem: viewModel.usesParSystem,
-            isExpanded: isActiveEditor,
-            focusRequest: isActiveEditor ? focusRequest : 0,
-            focusReleaseRequest: isActiveEditor ? focusReleaseRequest : 0,
-            isCompactPinned: isActiveEditor,
+            isExpanded: isExpanded,
+            focusRequest: isExpanded ? focusRequest : 0,
+            focusReleaseRequest: isExpanded ? focusReleaseRequest : 0,
+            isCompactPinned: false,
             onToggle: { handleToggle(for: item) },
             onUpdate: { binCount, manualPieces, physicalBinCount, notes in
                 viewModel.addOrUpdateReceivingEntry(
@@ -189,7 +127,7 @@ struct ReceivingView: View {
             },
             onDone: { handleDone(for: item) },
             onFocusChange: { focused in
-                handleReceivingFocusChange(item: item, focused: focused, isActiveEditor: isActiveEditor)
+                handleReceivingFocusChange(item: item, focused: focused)
             }
         )
     }
@@ -206,12 +144,10 @@ struct ReceivingView: View {
             } else {
                 ForEach(remaining, id: \.id) { item in
                     Button {
-                        withAnimation(KeyboardPinnedEditorMotion.lift) {
-                            scrollTarget = item.id
-                            expandedReceivingItemID = item.id
-                            freshExpansionItemID = entryHasValue(for: item) ? nil : item.id
-                            focusRequest += 1
-                        }
+                        guard expandedReceivingItemID == nil else { return }
+                        expandedReceivingItemID = item.id
+                        freshExpansionItemID = entryHasValue(for: item) ? nil : item.id
+                        focusRequest += 1
                     } label: {
                         Label(item.name, systemImage: LinenIconLibrary.symbolName(forItem: item.name))
                     }
@@ -223,6 +159,8 @@ struct ReceivingView: View {
                 .foregroundStyle(.white.opacity(0.8))
         }
         .accessibilityLabel("Jump to item")
+        .disabled(expandedReceivingItemID != nil)
+        .opacity(expandedReceivingItemID == nil ? 1 : 0.45)
     }
 
     private func towerHeader(_ tower: Tower) -> some View {
@@ -264,49 +202,26 @@ struct ReceivingView: View {
         return (entry?.calculatedPieces ?? 0) > 0
     }
 
-    private func listCardID(for item: LinenItem) -> String {
-        "list-card-\(item.id.uuidString)"
-    }
-
-    private func listPlaceholderID(for item: LinenItem) -> String {
-        "list-placeholder-\(item.id.uuidString)"
-    }
-
-    private func pinnedCardID(for item: LinenItem) -> String {
-        "pinned-card-\(item.id.uuidString)"
-    }
-
-    private func handleReceivingFocusChange(item: LinenItem, focused: Bool, isActiveEditor: Bool) {
-        if focused {
-            if expandedReceivingItemID != item.id {
-                withAnimation(KeyboardPinnedEditorMotion.lift) {
-                    expandedReceivingItemID = item.id
-                    freshExpansionItemID = entryHasValue(for: item) ? nil : item.id
-                    focusRequest += 1
-                    scrollTarget = item.id
-                }
-            } else if !isActiveEditor {
-                withAnimation(KeyboardPinnedEditorMotion.lift) {
-                    focusRequest += 1
-                }
+    private func handleReceivingFocusChange(item: LinenItem, focused: Bool) {
+        guard focused else { return }
+        if let lockedID = expandedReceivingItemID {
+            if lockedID != item.id {
+                focusRequest += 1
             }
-        } else if isActiveEditor, expandedReceivingItemID == item.id {
-            endEditing()
+            return
         }
+        expandedReceivingItemID = item.id
+        freshExpansionItemID = entryHasValue(for: item) ? nil : item.id
     }
 
     private func handleToggle(for item: LinenItem) {
-        if expandedReceivingItemID == item.id {
-            freshExpansionItemID = nil
-            endEditing()
-        } else {
-            withAnimation(KeyboardPinnedEditorMotion.lift) {
-                expandedReceivingItemID = item.id
-                freshExpansionItemID = entryHasValue(for: item) ? nil : item.id
-                focusRequest += 1
-                scrollTarget = item.id
-            }
+        if let lockedID = expandedReceivingItemID {
+            if lockedID != item.id { return }
+            return
         }
+        expandedReceivingItemID = item.id
+        freshExpansionItemID = entryHasValue(for: item) ? nil : item.id
+        focusRequest += 1
     }
 
     @ViewBuilder
@@ -324,8 +239,8 @@ struct ReceivingView: View {
     }
 
     private func handleKeyboardDone() {
-        guard let expandedReceivingItemID,
-              let item = orderedItems.first(where: { $0.id == expandedReceivingItemID }) else {
+        guard let currentID = expandedReceivingItemID,
+              let item = orderedItems.first(where: { $0.id == currentID }) else {
             endEditing()
             return
         }
@@ -333,15 +248,13 @@ struct ReceivingView: View {
     }
 
     private func endEditing() {
-        withAnimation(KeyboardPinnedEditorMotion.dismiss) {
-            focusReleaseRequest += 1
-            expandedReceivingItemID = nil
-        }
+        focusReleaseRequest += 1
+        expandedReceivingItemID = nil
     }
 
     private func canMoveToAdjacentItem(offset: Int) -> Bool {
-        guard let expandedReceivingItemID,
-              let index = orderedItems.firstIndex(where: { $0.id == expandedReceivingItemID }) else {
+        guard let currentID = expandedReceivingItemID,
+              let index = orderedItems.firstIndex(where: { $0.id == currentID }) else {
             return false
         }
         let nextIndex = index + offset
@@ -349,19 +262,16 @@ struct ReceivingView: View {
     }
 
     private func moveToAdjacentItem(offset: Int) {
-        guard let expandedReceivingItemID,
-              let index = orderedItems.firstIndex(where: { $0.id == expandedReceivingItemID }) else {
+        guard let currentID = expandedReceivingItemID,
+              let index = orderedItems.firstIndex(where: { $0.id == currentID }) else {
             return
         }
         let nextIndex = index + offset
         guard orderedItems.indices.contains(nextIndex) else { return }
         let nextItem = orderedItems[nextIndex]
-        withAnimation(KeyboardPinnedEditorMotion.crossfade) {
-            self.expandedReceivingItemID = nextItem.id
-            freshExpansionItemID = entryHasValue(for: nextItem) ? nil : nextItem.id
-            focusRequest += 1
-            scrollTarget = nextItem.id
-        }
+        expandedReceivingItemID = nextItem.id
+        freshExpansionItemID = entryHasValue(for: nextItem) ? nil : nextItem.id
+        focusRequest += 1
     }
 
     private func handleDone(for item: LinenItem) {
@@ -370,12 +280,9 @@ struct ReceivingView: View {
 
         if wasFresh && nowFilled, let next = nextUnfilledItem(after: item) {
             KeyboardEditingHaptics.success()
-            withAnimation(KeyboardPinnedEditorMotion.crossfade) {
-                expandedReceivingItemID = next.id
-                freshExpansionItemID = next.id
-                focusRequest += 1
-                scrollTarget = next.id
-            }
+            expandedReceivingItemID = next.id
+            freshExpansionItemID = next.id
+            focusRequest += 1
         } else {
             freshExpansionItemID = nil
             endEditing()
