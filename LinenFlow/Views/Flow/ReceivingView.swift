@@ -332,7 +332,7 @@ struct ReceivingView: View {
                 ProgressView(value: Double(stats.enteredItems), total: Double(max(stats.availableItems, 1)))
                     .tint(stats.statusTint)
 
-                HStack(spacing: 8) {
+                PremiumCardAdaptiveGrid(spacing: 8) {
                     dashboardMetric("Items", stats.enteredItems, systemImage: "square.grid.2x2.fill", tint: .blue)
                     dashboardMetric("Bundles", stats.fullBundles, systemImage: "shippingbox.fill", tint: .green)
                     dashboardMetric("Loose", stats.loosePieces, systemImage: "circle.grid.2x2.fill", tint: stats.loosePieces > 0 ? .orange : .white)
