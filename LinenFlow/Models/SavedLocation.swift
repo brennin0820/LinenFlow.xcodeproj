@@ -9,16 +9,11 @@ final class SavedLocation {
     var latitude: Double
     var longitude: Double
     var radiusMeters: Double
-    var locationTypeRaw: String
+    var locationType: LocationType
 
-    enum LocationType: String, Codable, Sendable {
+    enum LocationType: String, Codable {
         case home
         case work
-    }
-
-    var locationType: LocationType {
-        get { LocationType(rawValue: locationTypeRaw) ?? .work }
-        set { locationTypeRaw = newValue.rawValue }
     }
 
     var coordinate: CLLocationCoordinate2D {
@@ -30,14 +25,14 @@ final class SavedLocation {
         label: String,
         latitude: Double,
         longitude: Double,
-        radiusMeters: Double = 200,
-        locationType: LocationType = .work
+        radiusMeters: Double = 150,
+        locationType: LocationType
     ) {
         self.id = id
         self.label = label
         self.latitude = latitude
         self.longitude = longitude
-        self.radiusMeters = min(max(radiusMeters, 100), 500)
-        self.locationTypeRaw = locationType.rawValue
+        self.radiusMeters = radiusMeters
+        self.locationType = locationType
     }
 }

@@ -543,7 +543,11 @@ struct FloorDistributionView: View {
     }
 
     private var nextFloorLoadCard: some View {
-        PremiumCard(accentColor: .blue) {
+        let isRouteActive = nextUndoneFloor != nil
+        return PremiumCard(
+            accentColor: isRouteActive ? .blue : .green,
+            isCurrent: isRouteActive
+        ) {
             VStack(alignment: .leading, spacing: 13) {
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: nextUndoneFloor == nil ? "checkmark.seal.fill" : "figure.walk.arrival")
@@ -1189,8 +1193,8 @@ private struct FloorPlanCard: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
+            .animation(.snappy(duration: 0.2), value: isExpanded)
         }
-        .animation(.snappy(duration: 0.2), value: isExpanded)
     }
 
     private var header: some View {

@@ -1,191 +1,255 @@
-# HimmerFlow / LinenFlow — iOS Device Capabilities Inventory
+# HimmerFlow — iOS Device Capabilities Inventory
 
-> Generated: 2026-06-07  
-> Codebase: `LinenFlow/` (HimmerFlow scheme, iOS 26+)
-
-This document maps **what the app already uses**, **what is partially built**, and **what iPhone hardware/APIs remain available** for future linen-delivery and shift-planning features.
+> **Purpose:** Single reference for sensors, system integrations, and iPhone hardware features used (or available) in HimmerFlow / LinenFlow.
+>
+> **Audience:** iOS engineers, QA, and parallel agents wiring delivery / shift features.
+>
+> **Snapshot date:** 2026-06-07 — compiled from canonical codebase paths documented in the master plan, HimmerFlow WS6 integration notes, and active floor-detection work. Re-verify `Info.plist` keys on a full checkout before release.
+>
+> **Related:** `docs/superpowers/plans/2026-06-08-linen-tab-master-plan.md`, `AGENT_WORK_LOG.md`
 
 ---
 
-## App tabs & surfaces (current)
+## App surfaces (where capabilities appear)
 
-| Tab | Entry | Primary features |
-|-----|-------|------------------|
-| **Linen** | `Views/HomeView.swift` | Tower picker, one-screen linen item cards, inline calculations, floor distribution, save daily logs, delivery command center (`ShiftCommandCenterView`), property map preview |
-| **Shift** | `Views/Tabs/ShiftTabView.swift` → `DashboardView` | Shift timeline dashboard, patterns, durations, planner settings, Live Activity–driven shift phases, location onboarding |
-| **Insights** | `Views/Insights/InsightsView.swift` | Charts from saved logs, tower filter, supply recommendations via `ShiftIntelligenceService` |
-| **Logs** | `Views/Tabs/LogsTabView.swift` → `LogsView` | Historical daily logs, export |
-| **Settings** | `Views/Tabs/SettingsTabView.swift` → `SettingsView` | Theme, property map, QR scanner, monitoring tier, alarms, tower calibration |
-| **Widget extension** | `LinenFlow Widget/` | Home Screen + Lock Screen widgets, delivery command board, App Intents (`CompleteCurrentFloorIntent`) |
-| **Live Activities** | `LiveActivityService`, widget extension | Shift timeline on Lock Screen / Dynamic Island |
+| Surface | Tab / extension | Primary files | Device hooks |
+|---------|-----------------|---------------|----------------|
+| **Linen** | Tab 0 (`HomeView`) | `LinenFlow/Views/HomeView.swift`, `OneScreenLinenItemCard.swift` | Haptics, keyboard, widget pin, deep links |
+| **Shift** | Shift planner tab | `ShiftTabView`, `ShiftOrchestrator.swift`, `Core/TimelineComputation.swift` | GPS, geofences, notifications, Live Activity, MapKit |
+| **Logs** | Logs tab | `DailyLog` models, Logs views | SwiftData only |
+| **Settings** | Settings | Tower/item editors, `LocationPickerView.swift` | MapKit, SwiftData |
+| **Insights** | Reports | `DailyReportService.swift` | SwiftData read |
+| **Delivery** | Bottom chrome / command center | `ShiftCommandCenterView.swift`, `FloorChecklistView.swift`, `FloorDetectionCard.swift` | Barometer floor sensing (active delivery) |
+| **Home screen widget** | Widget extension | `LinenFlow Widget/HimmerFlow_Widget.swift`, `LinenFlow_WidgetBundle.swift` | WidgetKit, App Group |
+| **Live Activity** | Lock screen / Dynamic Island | `LiveActivity/ShiftActivityWidget.swift`, `LinenFlow Widget/` copies | ActivityKit |
+| **URL / widget deep links** | Cold / warm launch | `Utilities/WidgetDeepLinkRouter.swift`, `AppRootView.swift` | Custom URL schemes |
 
 ---
 
 ## Already integrated
 
-### Barometer / relative altitude (`CMAltimeter`)
-- **Files:** `Services/FloorSensingService.swift`, `Services/FloorSensingEstimator.swift`, `Models/FloorSensingState.swift`, `Views/Components/FloorDetectionCard.swift`, `ViewModels/FlowViewModel.swift`, `Views/Flow/ShiftCommandCenterView.swift`, `Views/Flow/FloorChecklistView.swift`
-- **Use:** Estimates current hotel floor during active delivery; user can correct floor; highlights checklist row.
-- **Permissions:** No dedicated Info.plist key (barometer is not gated by user prompt on iPhone).
-- **Battery:** Low–moderate while delivery session active; stopped when leaving command center.
-- **Simulator:** Gracefully reports unavailable.
+### Barometer / relative altitude (floor detection)
 
-### GPS / Core Location (`CLLocationManager`)
-- **Files:** `Services/LocationService.swift`, `Views/Location/LocationPickerView.swift`, `Core/ShiftOrchestrator.swift`, `App/HimmerFlowApp.swift`, `App/AppDelegate.swift`
-- **Use:** One-shot location for home/work pins; geofence enter/exit; significant location changes for shift reconciliation.
-- **Permissions:** `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription` (`LinenFlow/Info.plist`, `project.pbxproj`)
-- **Background:** `UIBackgroundModes`: `location`, `fetch`
-- **Battery:** Always + geofencing = **moderate–high**; significant-change monitoring = **low–moderate**
+| Field | Detail |
+|-------|--------|
+| **API** | `CoreMotion` — `CMAltimeter`, relative altitude |
+| **Status** | **Integrated** — service layer complete; UI wiring in progress (`9e5546a4`) |
+| **Files** | `LinenFlow/Services/FloorSensingService.swift`, `FloorSensingEstimator.swift`, `Models/FloorSensingState.swift`, `Services/TowerCalibrationService.swift`, `Models/Tower.swift` (`estimatedFloorHeightMeters`, `floorDetectionToleranceMeters`), `Views/Flow/FloorDetectionCard.swift`, `Views/Flow/ShiftCommandCenterView.swift`, `Views/Flow/FloorChecklistView.swift`, `ViewModels/FlowViewModel.swift` |
+| **Permission keys** | **None** — `CMAltimeter` does not prompt for motion permission |
+| **Battery** | **Low–medium** while delivery session active (continuous relative altitude updates). Stop on session end. |
+| **Simulator** | **Unavailable** — no barometer hardware; service should show graceful “unavailable” state |
+| **HimmerFlow use case** | Auto-highlight current floor during linen delivery on high-rise towers; attendant confirms with **Correct floor** control; pairs with `DeliveryFloorSequenceService.swift` ordering |
 
-### Geofencing (`CLCircularRegion`)
-- **Files:** `LocationService.swift`, `ReconciliationEngine.swift`, `ShiftOrchestrator.swift`, `Views/Settings/MonitoringTierPickerView.swift`
-- **Use:** Detect leaving home / arriving at work → reschedule notifications & Live Activity phases.
-- **Requires:** Precise location + When In Use (foreground) or Always (background delivery).
+### GPS / Core Location (when-in-use + geofences)
 
-### Significant location changes
-- **Files:** `LocationService.startMonitoringSignificantLocationChanges()`, wired in `HimmerFlowApp`
-- **Use:** Commute / coarse movement reconciliation without continuous GPS.
-- **Battery:** **Low** (cell-tower/Wi‑Fi assisted, not continuous GPS).
+| Field | Detail |
+|-------|--------|
+| **API** | `CoreLocation` — `CLLocationManager`, circular regions, significant-change monitoring |
+| **Status** | **Integrated** (Shift tab / orchestrator) |
+| **Files** | `LinenFlow/Services/LocationService.swift`, `Models/SavedLocation.swift`, `Models/ShiftLocationState.swift`, `Views/Location/LocationPickerView.swift`, `Core/ShiftOrchestrator.swift`, `Core/ReconciliationEngine.swift`, `LinenFlowTests/GeofenceHandlingTests.swift` |
+| **Permission keys** | `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription` (in `LinenFlow/Info.plist`) |
+| **Background modes** | `location` in `UIBackgroundModes` — cold launch via `AppDelegate` / `HimmerFlowAppIntegration.register()` |
+| **Battery** | **Medium–high** with always/background geofencing; **low** for one-shot “current location” in picker |
+| **HimmerFlow use case** | Detect leave-home / arrive-work for shift timeline phases; reconcile orchestrator state with `ShiftLocationState`; optional tower geo calibration fields on `Tower.swift` |
 
-### Local notifications (`UserNotifications`)
-- **Files:** `Services/NotificationService.swift`, `ShiftNotificationService.swift`, `ShiftAlarmNotificationService.swift`, `LeavingChecklistNotificationService.swift`, `NotificationManager.swift`
-- **Use:** Shift alarms, leaving checklist, ack/snooze actions, reconciliation scheduling.
-- **Permissions:** Runtime prompt on first schedule; categories registered in `NotificationService.registerCategories()`.
-- **Battery:** **Negligible** (system-managed).
+### Background location & geofence reactions
 
-### Live Activities (`ActivityKit`)
-- **Files:** `Services/LiveActivityService.swift`, `LiveActivity/ShiftActivityAttributes.swift`, `LinenFlow Widget/ShiftActivityWidget.swift`
-- **Use:** Shift phase timeline on Lock Screen / Dynamic Island.
-- **Plist:** `INFOPLIST_KEY_NSSupportsLiveActivities = YES`
-- **Battery:** **Low** (OS-managed updates).
+| Field | Detail |
+|-------|--------|
+| **API** | Region monitoring + significant location changes |
+| **Status** | **Integrated** — wired through `ShiftOrchestrator` → `LocationService` |
+| **Files** | `ShiftOrchestrator.swift`, `LocationService.swift`, `ShiftTimelinePhase.swift` (geofence reactions), `LinenFlowTests/ReconciliationTests.swift`, `ShiftOrchestratorReconciliationTests.swift` |
+| **Permission keys** | Same as GPS + **Always** authorization for reliable background entry |
+| **Battery** | **Medium** — region monitoring is efficient vs continuous GPS fixes |
+| **HimmerFlow use case** | Advance shift phases (e.g. `.leave`, `.commute`, `.arrival`) without user opening the app at 5 AM |
 
-### WidgetKit + App Intents
-- **Files:** `LinenFlow Widget/LinenFlow_Widget.swift`, `LinenFlow Widget/AppIntent.swift`, `LinenFlowWidgets/*`, `Services/SharedWidgetStateManager.swift`
-- **Use:** Delivery progress widgets, floor-complete intent, deep links (`himmerflow://`).
-- **App Group:** `group.com.himmerflow.shared` (`LinenFlow.entitlements`, widget entitlements)
-- **Battery:** **Negligible** (timeline refresh every 2–15 min).
+### Local notifications
 
-### MapKit
-- **Files:** `Views/Location/LocationPickerView.swift`, `Views/Components/PropertySceneMapView.swift`, `Utilities/HiltonPropertyMap.swift`
-- **Use:** Pick home/work, property tower map preview.
-- **Permissions:** None beyond location when centering on user.
+| Field | Detail |
+|-------|--------|
+| **API** | `UserNotifications` — `UNUserNotificationCenter`, calendar triggers |
+| **Status** | **Integrated** |
+| **Files** | `LinenFlow/Services/NotificationService.swift`, `LinenFlowTests/NotificationSchedulingTests.swift`, orchestrator scheduling hooks |
+| **Permission keys** | System prompt only (no Info.plist usage string required) |
+| **Battery** | **Negligible** |
+| **HimmerFlow use case** | Phase reminders: sleep, wake, leave-by, commute, shift countdown; snooze actions |
 
-### Wi‑Fi path monitoring (`Network` / `NWPathMonitor`)
-- **Files:** `Services/WiFiLeaveDetectionService.swift`
-- **Use:** Foreground-only hint when Wi‑Fi drops (possible leave-home); **not** reliable background detection.
-- **Battery:** **Low** while monitoring in foreground.
+### Live Activities (ActivityKit)
 
-### Haptics (`UIImpactFeedbackGenerator`)
-- **Files:** `KeyboardPinnedEditorShell.swift`, `TodayShiftPlanCard.swift`, legacy delivery content
-- **Use:** Light/medium feedback on commit and shift actions.
-- **Battery:** Negligible.
+| Field | Detail |
+|-------|--------|
+| **API** | `ActivityKit` — shift timeline on Lock Screen / Dynamic Island |
+| **Status** | **Integrated** |
+| **Files** | `LinenFlow/Services/LiveActivityService.swift`, `LiveActivity/ShiftActivityWidget.swift`, `LinenFlow Widget/` (extension copy), `Models/SharedWidgetState.swift`, `Utilities/AppLogger.swift` (`liveactivity` category) |
+| **Permission keys** | `NSSupportsLiveActivities` = YES in Info.plist; Live Activity entitlement on target |
+| **Battery** | **Low** — system-managed updates |
+| **HimmerFlow use case** | Glanceable “leave in 12 min” / current phase for tired night-shift workers; aligned with linen delivery widget state via `SharedWidgetState` |
 
-### Camera / AVFoundation (QR)
-- **Files:** `Views/Settings/QRScannerView.swift`
-- **Use:** Scan property share codes.
-- **Permissions:** **Missing from Info.plist** — add `NSCameraUsageDescription` before App Store or first camera use will crash.
-- **Battery:** Low (only while scanner open).
+### Home screen widgets (WidgetKit)
 
-### SwiftData + App Group UserDefaults
-- **Files:** `App/HimmerFlowApp.swift`, `SharedWidgetStateManager.swift`, models under `Models/`
-- **Use:** Local persistence; widget/Live Activity shared state.
+| Field | Detail |
+|-------|--------|
+| **API** | `WidgetKit`, `TimelineProvider`, App Group JSON |
+| **Status** | **Integrated** |
+| **Files** | `LinenFlow Widget/HimmerFlow_Widget.swift`, `LinenFlow_WidgetBundle.swift`, `Services/SharedWidgetStateManager.swift`, `Models/SharedWidgetState.swift`, `FlowViewModel.syncWidgetState()` |
+| **Permission keys** | App Group entitlement: `group.com.himmerflow.shared` (legacy: `group.com.linenflow.shared`) |
+| **Battery** | **Negligible** — OS schedules widget reloads |
+| **HimmerFlow use case** | Pin up to 3 linen items; show delivery progress; tap opens app via deep link |
 
-### URL scheme / deep links
-- **Files:** `LinenFlow/Info.plist`, `LinenFlowURLTypes.plist`, `WidgetDeepLinkRouter`
-- **Scheme:** `himmerflow://`
+### App Groups & deep links
 
----
+| Field | Detail |
+|-------|--------|
+| **API** | `UserDefaults(suiteName:)`, custom URL schemes |
+| **Status** | **Integrated** |
+| **Files** | `SharedWidgetStateManager.swift`, `Utilities/WidgetDeepLinkRouter.swift`, `AppRootView.swift`, `FlowViewModel.migrateLegacyUserDefaultsKeys()` |
+| **Schemes** | `himmerflow://`, `linenflow://` (legacy) — e.g. `himmerflow://widget/delivery?tower=Lagoon` |
+| **Battery** | **Negligible** |
+| **HimmerFlow use case** | Widget ↔ app state continuity; bookmarkable delivery entry points |
 
-## Partially built (service exists, UI incomplete or stub)
+### MapKit (maps & routing UI)
 
-### Phone movement sensing (`PhoneMovementProvider`)
-- **Files:** `Services/PhoneMovementProvider.swift`, `MovementSensingCoordinator`
-- **Status:** Stub — returns stationary/low confidence; comments document future `CMPedometer`, `CMMotionActivityManager`, barometer fusion.
-- **Could enable:** Auto-detect walking between floors, dwell time on floor, “worked floor” vs “landed floor”.
-- **Permissions (future):** `NSMotionUsageDescription` if using Core Motion activity API.
-- **Battery:** Moderate if always-on during delivery.
+| Field | Detail |
+|-------|--------|
+| **API** | `MapKit`, `MKMapItem`, directions (Shift tab) |
+| **Status** | **Integrated** (Shift / location picker) |
+| **Files** | `Views/Location/LocationPickerView.swift`, Shift tab commute cards, `LocationService.fetchCurrentLocation()` |
+| **Permission keys** | Uses location keys when showing user position |
+| **Battery** | **Low–medium** during active route preview |
+| **HimmerFlow use case** | Pick home/work geofence centers; commute ETA card |
 
-### Apple Watch movement (`WatchMovementProvider`)
-- **Files:** `Services/WatchMovementProvider.swift`
-- **Status:** Stub — no watchOS target, no `WatchConnectivity`.
-- **Could enable:** Wrist step count, workout session during delivery, cross-check with barometer.
-- **Battery:** Watch moderate; phone low (BT sync).
+### Haptic feedback
 
-### Floor tracking session (mocks)
-- **Files:** `ViewModels/FloorTrackingSessionViewModel.swift`, mock managers
-- **Status:** Instantiated in `HimmerFlowApp` but **not wired to any view**; uses `MockFloorTrackingManager` / `MockFootstepTrackingManager`.
-- **Could enable:** Analytics overlay, debug floor timeline, future fusion with real sensors.
+| Field | Detail |
+|-------|--------|
+| **API** | `UIImpactFeedbackGenerator`, `UINotificationFeedbackGenerator`, SwiftUI `.sensoryFeedback` |
+| **Status** | **Integrated** (Linen tab) |
+| **Files** | `HomeView.swift`, `OneScreenLinenItemCard.swift`, `PremiumExpressionInput.swift`, Smart Fill / Save Log flows |
+| **Permission keys** | None |
+| **Battery** | **Negligible** |
+| **HimmerFlow use case** | Confirm valid expression commit, Save Log success, Smart Fill apply — tactile confidence on noisy laundry floors |
 
-### Floor height calibration
-- **Files:** `Services/FloorHeightCalibrationService.swift`, `TowerCalibrationService.swift`
-- **Status:** Models/services exist; tied to tower settings; real-device calibration flow partial.
+### SwiftData + local persistence
 
-### Delivery Live Activity (linen route)
-- **Files:** `LinenFlowWidgets/DeliveryLiveActivity.swift`, `Models/DeliveryLiveActivityAttributes.swift`, `LiveActivityManager.swift`
-- **Status:** Code present; primary Live Activity path is **shift timeline** (`ShiftActivityAttributes`). Delivery-specific LA may be secondary/legacy.
+| Field | Detail |
+|-------|--------|
+| **API** | SwiftData `@Model`, lightweight migration |
+| **Status** | **Integrated** |
+| **Files** | `HimmerFlowApp.swift`, `HimmerFlowMigrationPlan.swift`, `Tower`, `LinenItem`, `DailyLog`, shift models in `LinenFlow/Models/` |
+| **Permission keys** | None |
+| **Battery** | **Negligible** |
+| **HimmerFlow use case** | Towers, par settings, immutable daily log snapshots, shift patterns |
 
----
+### Accessibility (VoiceOver, Dynamic Type)
 
-## Available on iPhone but unused (opportunity list)
+| Field | Detail |
+|-------|--------|
+| **API** | SwiftUI accessibility modifiers, `AccessibilityNotification` |
+| **Status** | **Partial** (Phase 11 in flight) |
+| **Files** | `HomeView.linenCardAccessibilityLabel`, `OneScreenLinenItemCard.swift`, `PremiumCard.swift` |
+| **Permission keys** | None |
+| **Battery** | **Negligible** |
+| **HimmerFlow use case** | Attendants with VoiceOver; XXXL Dynamic Type on card grid |
 
-| Capability | API | HimmerFlow use case | Permission key | Battery impact |
-|------------|-----|---------------------|----------------|----------------|
-| **Accelerometer / gyro** | `CMMotionManager` device motion | Detect elevator vs stairs, shake-to-correct floor | `NSMotionUsageDescription` | Moderate during session |
-| **Magnetometer** | `CMMotionManager` | Heading / map orientation in property map | Usually none | Low |
-| **Pedometer** | `CMPedometer` | Steps per floor, confirm “worked floor” | `NSMotionUsageDescription` | Moderate |
-| **Motion activity** | `CMMotionActivityManager` | Walking vs stationary vs automotive (commute) | `NSMotionUsageDescription` | Low–moderate |
-| **Bluetooth LE** | `CoreBluetooth` | Beacon-based floor or laundry-room proximity | `NSBluetoothAlwaysUsageDescription` | Moderate if scanning |
-| **NFC** | `CoreNFC` | Tap tower/floor tags for instant floor confirm | NFCReaderUsageDescription | Low (on tap) |
-| **HealthKit steps** | `HKHealthStore` | Cross-check steps (user opt-in) | Health share in Health app | Low |
-| **Siri / Shortcuts** | App Intents (partial) | “Start delivery”, “Log received count” | None extra | Negligible |
-| **Focus filters** | `FocusStatus` | Suppress non-shift notifications during delivery | None | Negligible |
-| **Background fetch** | `UIBackgroundModes: fetch` | Declared but minimal custom BG fetch logic | — | Low |
-| **Push (remote)** | APNs | Server-driven shift updates (not implemented) | Push capability | Low |
-| **UWB / Nearby Interaction** | `NearbyInteraction` | Precise indoor (future, niche) | — | High |
+### Logging (OSLog)
 
----
-
-## Top 10 recommended next integrations (impact × feasibility)
-
-1. **Barometer floor detection (done)** — already in Shift Command Center; tune on physical device.
-2. **CMPedometer + motion activity** — fuse with barometer in `PhoneMovementProvider` for walked-floor confirmation.
-3. **Geofence + significant location (done)** — ensure Always permission UX in onboarding.
-4. **Live Activities for shift (done)** — extend to delivery countdown if desired.
-5. **Widget floor-complete intent (done)** — expand App Shortcuts phrases.
-6. **NFC floor tags** — tap to snap `correctFloor` when barometer drifts.
-7. **Camera permission plist** — required fix for QR scanner production use.
-8. **Apple Watch companion** — steps + haptic “floor complete” on wrist.
-9. **Bluetooth beacons** — elevator lobby / linen room proximity (hotel IT dependent).
-10. **Focus mode integration** — quiet non-essential alerts during active delivery session.
+| Field | Detail |
+|-------|--------|
+| **API** | `OSLog` / `Logger` |
+| **Status** | **Integrated** |
+| **Files** | `Utilities/AppLogger.swift`, `Utilities/Logging.swift` (`HimmerFlowLog`) — categories: `boot`, `session`, `widget`, `save`, `location`, `liveActivity`, `orchestrator` |
+| **Battery** | **Negligible** |
+| **HimmerFlow use case** | Debug Linen save pipeline, widget sync failures, shift reconciliation |
 
 ---
 
-## Permission checklist (Info.plist / entitlements)
+## Partially built (services exist; UI or wiring incomplete)
 
-| Key / entitlement | Present? | Notes |
-|-------------------|----------|-------|
-| `NSLocationWhenInUseUsageDescription` | ✅ | |
-| `NSLocationAlwaysAndWhenInUseUsageDescription` | ✅ | |
-| `UIBackgroundModes: location, fetch` | ✅ | |
-| `NSSupportsLiveActivities` | ✅ | build setting |
-| `com.apple.security.application-groups` | ✅ | `group.com.himmerflow.shared` |
-| `NSCameraUsageDescription` | ❌ | Needed for `QRScannerView` |
-| `NSMotionUsageDescription` | ❌ | Needed for pedometer/activity APIs |
-| `NSBluetoothAlwaysUsageDescription` | ❌ | If BLE added |
-| Push Notifications entitlement | ❌ | Not used |
+| Capability | Files | Gap | HimmerFlow opportunity |
+|------------|-------|-----|------------------------|
+| **Movement sensing coordinator** | `Services/MovementSensingCoordinator.swift` | Not primary path for floor UI | Fuse barometer + motion for elevator vs stairs detection |
+| **Phone movement provider** | Mock / protocol in movement stack | Production provider may be stubbed | Detect “walking between floors” vs idle cart |
+| **Floor tracking session VM** | `ViewModels/FloorTrackingSessionViewModel.swift` | Uses mocks; not mounted in views | Dedicated debug / calibration session |
+| **Tower calibration UI** | `TowerCalibrationView`, `TowerPickerEnvironmentView` (if present) | May be settings-only or hidden | On-site floor height calibration wizard |
+| **VoiceOver on distribution rows** | `OneScreenLinenItemCard.swift` | SC-13 partial per master plan | Full card grid a11y |
+| **Dynamic Type XXXL** | Card header grids | SC-14 gap | Prevent clipping on small phones |
+| **Analytics / signposts** | Observability section in master plan | OSLog only today | Smart Fill adoption metrics |
 
 ---
 
-## Testing notes
+## Available on iPhone but unused (or not planned)
 
-- **Simulator:** Barometer unavailable; location can be simulated; Live Activities supported on recent simulators.
-- **Physical iPhone:** Required for barometer calibration, geofence background behavior, haptics, and App Store–realistic permission flows.
-- **Unit tests:** `LinenFlowTests/FloorSensingEstimatorTests.swift`, `GeofenceHandlingTests.swift`, `NotificationSchedulingTests.swift`, `ReconciliationTests.swift` cover core logic without hardware.
+| Capability | API / framework | Permission keys | Battery impact | HimmerFlow use case (if adopted) |
+|------------|-----------------|-----------------|----------------|----------------------------------|
+| **Pedometer** | `CMPedometer` | `NSMotionUsageDescription` | Medium during active monitoring | Verify “walk-in” phase completion; floor-change corroboration |
+| **Motion activity** | `CMMotionActivityManager` | `NSMotionUsageDescription` | Medium | Distinguish driving vs walking vs stationary for commute phase |
+| **Accelerometer / gyro** | `CMMotionManager` device motion | `NSMotionUsageDescription` (if motion classified) | Medium–high if continuous | Shake-to-correct floor; detect elevator start/stop |
+| **Magnetometer** | `CLLocationManager` heading | Usually bundled with location | Low | Indoor heading for long hotel corridors (weak indoors) |
+| **NFC** | `CoreNFC` | `NFCReaderUsageDescription` | Low per scan | Tap floor or linen closet NFC tags to confirm location |
+| **Camera / barcode** | `AVFoundation`, `Vision` | `NSCameraUsageDescription` | Low per scan | Scan cart labels (`CountMethod.cartLabelPieces`) instead of manual entry |
+| **HealthKit sleep** | `HealthKit` | Health share/read usage strings | Low (read) | Import sleep duration instead of manual sleep phase |
+| **Bluetooth beacons** | `CoreBluetooth` + iBeacon | `NSBluetoothAlwaysUsageDescription` (if background) | Medium | Fixed floor beacons in service elevators |
+| **UWB ranging** | Nearby Interaction | Varies | Medium | Precise distance to dock stations (future) |
+| **Siri / App Intents** | App Intents framework | None | Negligible | “Start Lagoon delivery” hands-free |
+| **Focus filters** | Focus API | None | Negligible | Auto-silence non-shift notifications during sleep phase |
+| **Apple Watch** | `WatchConnectivity` | Watch companion target | Depends on watch app | Wrist countdown for leave-by time |
+| **Significant location only** | `startMonitoringSignificantLocationChanges` | Location Always | Low–medium | Cheaper fallback if geofence radii are large |
+| **CarPlay** | `CPInterfaceController` | CarPlay entitlement | N/A | Unlikely for linen attendants |
+| **ARKit** | ARKit | Camera permission | High | Overkill for floor counting |
 
 ---
 
-## Related architecture files
+## Permission & entitlement checklist
 
-- Shift location pipeline: `Core/ShiftOrchestrator.swift`, `Core/ReconciliationEngine.swift`, `Core/TimelineComputation.swift`
-- Delivery flow: `ViewModels/FlowViewModel.swift`, `Views/Flow/ShiftCommandCenterView.swift`
-- Widget state: `Services/SharedWidgetStateManager.swift`
+Verify on full tree before TestFlight:
+
+| Key / entitlement | Required for | Typical location |
+|-------------------|--------------|------------------|
+| `NSLocationWhenInUseUsageDescription` | Map picker, foreground location | `LinenFlow/Info.plist` |
+| `NSLocationAlwaysAndWhenInUseUsageDescription` | Background geofences, shift orchestrator | `LinenFlow/Info.plist` |
+| `UIBackgroundModes` → `location` | Geofence wake, AppDelegate relaunch | `LinenFlow/Info.plist` |
+| `NSSupportsLiveActivities` | Shift Live Activity | `LinenFlow/Info.plist` |
+| App Groups `group.com.himmerflow.shared` | Widget + shared state | App + widget entitlements |
+| URL types `himmerflow`, `linenflow` | Widget deep links | Info.plist / target settings |
+| `NSMotionUsageDescription` | **Not required today** (barometer only) | Add if adopting pedometer / motion activity |
+| `NSCameraUsageDescription` | **Not required today** | Add if barcode scanning ships |
+| `NFCReaderUsageDescription` | **Not required today** | Add if NFC floor tags ship |
+
+---
+
+## Battery impact summary (operations view)
+
+| Tier | Features | Guidance |
+|------|----------|----------|
+| **Negligible** | WidgetKit, notifications (scheduled), haptics, SwiftData, deep links | Safe to leave enabled |
+| **Low** | Live Activities, MapKit snapshot, one-shot GPS | Default for shift tab |
+| **Medium** | Barometer during delivery, geofence monitoring, pedometer | Start/stop with delivery session; document in QA |
+| **High** | Continuous GPS fixes, continuous motion streaming, AR | Avoid unless explicitly product-required |
+
+---
+
+## Verification notes
+
+| Feature | Simulator | Physical iPhone |
+|---------|-----------|-----------------|
+| Barometer / floor detection | ❌ Unavailable | ✅ Required (`AGENT_WORK_LOG.md` quality gate) |
+| Widget pin + App Group | ⚠️ Partial | ✅ Preferred |
+| Haptics | ❌ | ✅ |
+| Geofence background | ⚠️ Limited | ✅ |
+| Live Activity | ✅ | ✅ |
+
+**Console filters:**
+
+```
+subsystem:com.himmerflow.app category:widget
+subsystem:com.himmerflow.app category:location
+subsystem:com.himmerflow.app category:liveactivity
+```
+
+---
+
+## Changelog
+
+| Date | Change |
+|------|--------|
+| 2026-06-07 | Initial inventory (`89f7ca28`) — docs-only; 50fed4e9 audit doc not yet present |

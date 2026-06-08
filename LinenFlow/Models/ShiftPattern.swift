@@ -5,63 +5,70 @@ import SwiftData
 final class ShiftPattern {
     var id: UUID
     var name: String
-    var weekdayRawValues: [Int]
-    var clockInHour: Int
-    var clockInMinute: Int
+    private var daysOfWeekRawValues: [Int]
+    var clockInTime: DateComponents
     var shiftDurationMinutes: Int
+    var workLocation: SavedLocation?
     var isActive: Bool
-    @Relationship(deleteRule: .nullify) var workLocation: SavedLocation?
 
     var daysOfWeek: Set<Weekday> {
-        get { Set(weekdayRawValues.compactMap(Weekday.init(rawValue:))) }
-        set { weekdayRawValues = newValue.map(\.rawValue).sorted() }
-    }
-
-    var clockInTime: DateComponents {
-        get { DateComponents(hour: clockInHour, minute: clockInMinute) }
+        get {
+            Set(daysOfWeekRawValues.compactMap { Weekday(rawValue: $0) })
+        }
         set {
-            clockInHour = newValue.hour ?? 0
-            clockInMinute = newValue.minute ?? 0
+            daysOfWeekRawValues = newValue.map(\.rawValue).sorted()
         }
     }
+
+    var clockInHour: Int { clockInTime.hour ?? 0 }
+    var clockInMinute: Int { clockInTime.minute ?? 0 }
 
     init(
         id: UUID = UUID(),
         name: String,
         daysOfWeek: Set<Weekday> = [],
-        clockInTime: DateComponents = DateComponents(hour: 23, minute: 0),
-        shiftDurationMinutes: Int = 480,
+        clockInTime: DateComponents,
+        shiftDurationMinutes: Int,
         workLocation: SavedLocation? = nil,
         isActive: Bool = true
     ) {
         self.id = id
         self.name = name
-        self.weekdayRawValues = daysOfWeek.map(\.rawValue).sorted()
-        self.clockInHour = clockInTime.hour ?? 0
-        self.clockInMinute = clockInTime.minute ?? 0
+        self.daysOfWeekRawValues = daysOfWeek.map(\.rawValue).sorted()
+        self.clockInTime = clockInTime
         self.shiftDurationMinutes = shiftDurationMinutes
         self.workLocation = workLocation
         self.isActive = isActive
     }
 
-    func nextOccurrence(after referenceDate: Date, calendar: Calendar = .autoupdatingCurrent) -> Date? {
+    /// Computes the next occurrence of this shift on or after the reference date.
+    func nextOccurrence(after referenceDate: Date, calendar: Calendar) -> Date? {
         guard isActive, !daysOfWeek.isEmpty else { return nil }
+        guard let hour = clockInTime.hour, let minute = clockInTime.minute else { return nil }
 
-        for dayOffset in 0..<14 {
-            guard let candidateDay = calendar.date(byAdding: .day, value: dayOffset, to: referenceDate) else { continue }
-            let weekday = calendar.component(.weekday, from: candidateDay)
-            guard let match = Weekday(rawValue: weekday), daysOfWeek.contains(match) else { continue }
+        let startOfReferenceDay = calendar.startOfDay(for: referenceDate)
+
+        for dayOffset in 0 ..< 8 {
+            guard let candidateDay = calendar.date(byAdding: .day, value: dayOffset, to: startOfReferenceDay) else {
+                continue
+            }
+
+            let weekdayValue = calendar.component(.weekday, from: candidateDay)
+            guard let weekday = Weekday(rawValue: weekdayValue), daysOfWeek.contains(weekday) else {
+                continue
+            }
 
             var components = calendar.dateComponents([.year, .month, .day], from: candidateDay)
-            components.hour = clockInHour
-            components.minute = clockInMinute
+            components.hour = hour
+            components.minute = minute
             components.second = 0
-            guard let occurrence = calendar.date(from: components) else { continue }
 
-            if occurrence > referenceDate {
+            guard let occurrence = calendar.date(from: components) else { continue }
+            if occurrence >= referenceDate {
                 return occurrence
             }
         }
+
         return nil
     }
 }

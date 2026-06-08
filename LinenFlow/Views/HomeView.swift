@@ -20,18 +20,50 @@ struct HomeView: View {
     @State private var focusRequest = 0
     @State private var focusReleaseRequest = 0
     @State private var showDeliveryCommandCenter = false
+    @State private var keyboardBottomInset: CGFloat = 0
+    @State private var scrollViewportHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         NavigationStack {
             AppBackground(accentColor: selectedTowerColor) {
-                ScrollView { flowContent }
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        flowContent
+                            .padding(.bottom, editingScrollBottomPadding)
+                    }
                     .scrollDismissesKeyboard(.interactively)
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                    .scrollDisabled(focusedItemID != nil)
+                    .background {
+                        GeometryReader { geometry in
+                            Color.clear
+                                .onAppear { scrollViewportHeight = geometry.size.height }
+                                .onChange(of: geometry.size.height) { _, height in
+                                    scrollViewportHeight = height
+                                }
+                        }
+                    }
+                    .onChange(of: focusedItemID) { _, itemID in
+                        scrollFocusedItemIntoView(proxy: scrollProxy, itemID: itemID)
+                    }
+                    .onChange(of: focusRequest) { _, _ in
+                        scrollFocusedItemIntoView(proxy: scrollProxy, itemID: focusedItemID)
+                    }
+                    .onChange(of: keyboardBottomInset) { _, inset in
+                        guard inset > 0, focusedItemID != nil else { return }
+                        scrollFocusedItemIntoView(proxy: scrollProxy, itemID: focusedItemID, delay: 0.05)
+                    }
+                }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if focusedItemID == nil {
                         bottomChrome
                     }
+                }
+                .observesKeyboardBottomInset($keyboardBottomInset, reduceMotion: reduceMotion)
             }
+            .environment(\.linenEditingActive, focusedItemID != nil)
+            .environment(\.linenFocusedCardMaxHeight, focusedCardMaxHeight)
             .navigationTitle(viewModel.selectedTower?.name ?? "Linen Delivery")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -72,6 +104,34 @@ struct HomeView: View {
 
     private var flowContent: some View {
         VStack(spacing: 12) {
+            preItemFlowChrome
+
+            if viewModel.selectedTower != nil {
+                itemList
+            }
+
+            postItemFlowChrome
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .opacity(hasAppeared ? 1 : 0)
+        .offset(y: hasAppeared ? 0 : 12)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.35), value: hasAppeared)
+        .confirmationDialog("Clear received entries?", isPresented: $showClearConfirmation, titleVisibility: .visible) {
+            Button("Clear Entries", role: .destructive) {
+                savedConfirmation = nil
+                viewModel.clearEntries()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will remove all entered supply for the current shift. This cannot be undone.")
+        }
+    }
+
+    @ViewBuilder
+    private var preItemFlowChrome: some View {
+        let isEditing = focusedItemID != nil
+        VStack(spacing: 12) {
             header
             towerPicker
 
@@ -100,9 +160,15 @@ struct HomeView: View {
                     notesField
                 }
                 inlineActions
-                itemList
             }
+        }
+        .keyboardEditingTapAbsorber(isActive: isEditing, dimmed: true)
+    }
 
+    @ViewBuilder
+    private var postItemFlowChrome: some View {
+        let isEditing = focusedItemID != nil
+        VStack(spacing: 12) {
             if let savedConfirmation {
                 PremiumCard(accentColor: .green) {
                     HStack(spacing: 10) {
@@ -117,20 +183,7 @@ struct HomeView: View {
 
             Spacer(minLength: 28)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .opacity(hasAppeared ? 1 : 0)
-        .offset(y: hasAppeared ? 0 : 12)
-        .animation(reduceMotion ? nil : .snappy(duration: 0.35), value: hasAppeared)
-        .confirmationDialog("Clear received entries?", isPresented: $showClearConfirmation, titleVisibility: .visible) {
-            Button("Clear Entries", role: .destructive) {
-                savedConfirmation = nil
-                viewModel.clearEntries()
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This will remove all entered supply for the current shift. This cannot be undone.")
-        }
+        .keyboardEditingTapAbsorber(isActive: isEditing, dimmed: true)
     }
 
     @ViewBuilder
@@ -890,9 +943,10 @@ struct HomeView: View {
         )
         .id(item.id)
         .opacity(isLockedElsewhere ? 0.42 : 1)
-        .allowsHitTesting(!isLockedElsewhere)
+        .keyboardEditingTapAbsorber(isActive: isLockedElsewhere)
+        .zIndex(isFocused ? 1 : 0)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: focusedItemID)
         .accessibilityLabel(linenCardAccessibilityLabel(item: item, isFocused: isFocused, isLockedElsewhere: isLockedElsewhere))
-        .accessibilityAddTraits(isFocused ? .isSelected : [])
     }
 
     private func linenCardAccessibilityLabel(item: LinenItem, isFocused: Bool, isLockedElsewhere: Bool) -> String {
@@ -917,6 +971,37 @@ struct HomeView: View {
     private var focusedItem: LinenItem? {
         guard let focusedItemID else { return nil }
         return orderedEditableItems.first { $0.id == focusedItemID }
+    }
+
+    private var editingScrollBottomPadding: CGFloat {
+        guard focusedItemID != nil else { return 0 }
+        guard keyboardBottomInset > 0 else { return 0 }
+        return keyboardBottomInset + KeyboardEditingLayout.keyboardGap
+    }
+
+    private var focusedCardMaxHeight: CGFloat? {
+        guard focusedItemID != nil, keyboardBottomInset > 0, scrollViewportHeight > 0 else { return nil }
+        let reserved = keyboardBottomInset + KeyboardEditingLayout.keyboardGap + 12
+        return max(180, scrollViewportHeight - reserved)
+    }
+
+    private func scrollFocusedItemIntoView(
+        proxy: ScrollViewProxy,
+        itemID: UUID?,
+        delay: TimeInterval = 0
+    ) {
+        guard let itemID else { return }
+        let animation = reduceMotion ? nil : KeyboardPinnedEditorMotion.lift
+        let scroll = {
+            withAnimation(animation) {
+                proxy.scrollTo(itemID, anchor: .bottom)
+            }
+        }
+        if delay > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: scroll)
+        } else {
+            scroll()
+        }
     }
 
     @ViewBuilder
@@ -978,6 +1063,7 @@ struct HomeView: View {
         focusRequest += 1
     }
 
+    /// Keyboard blur must not exit edit mode — only explicit Done/Close calls `endEditing()`.
     private func handleItemFocusChange(item: LinenItem, focused: Bool) {
         guard focused else { return }
         if let lockedID = focusedItemID {
@@ -989,6 +1075,7 @@ struct HomeView: View {
         activateEditing(item)
     }
 
+    /// Explicit card dismissal — the only path that clears `focusedItemID`.
     private func endEditing() {
         focusReleaseRequest += 1
         focusedItemID = nil

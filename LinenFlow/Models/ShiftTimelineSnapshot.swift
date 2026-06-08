@@ -1,45 +1,61 @@
 import Foundation
 
-struct ShiftTimelineSnapshot: Equatable, Sendable {
+struct ShiftTimelineSnapshot {
     let shiftDate: Date
     let phases: [PhaseWindow]
     let primaryAnchor: Date
 
-    struct PhaseWindow: Equatable, Sendable {
+    struct PhaseWindow: Equatable {
         let phase: ShiftTimelinePhase
         let start: Date
         let end: Date
 
-        var isPointEvent: Bool { start == end }
-
-        func contains(_ date: Date) -> Bool {
-            if isPointEvent {
-                return date >= start
-            }
-            return date >= start && date < end
+        var durationIsZero: Bool {
+            start == end
         }
+
+        var isPointEvent: Bool { durationIsZero }
     }
 
-    func window(for phase: ShiftTimelinePhase) -> PhaseWindow? {
-        phases.first { $0.phase == phase }
-    }
-
+    /// Current phase given a point in time.
     func currentPhase(at now: Date) -> ShiftTimelinePhase {
-        guard let first = phases.first, now >= first.start else { return .idle }
+        let ordered = phases.sorted { $0.start < $1.start }
 
-        if let active = phases.last(where: { $0.contains(now) }) {
-            return active.phase
+        for (index, window) in ordered.enumerated() {
+            if window.durationIsZero {
+                if now >= window.start {
+                    let nextStart = ordered.dropFirst(index + 1).first?.start
+                    if nextStart == nil || now < nextStart! {
+                        return window.phase
+                    }
+                }
+                continue
+            }
+
+            if now >= window.start && now < window.end {
+                return window.phase
+            }
         }
 
-        if let last = phases.last, now >= last.end {
+        if let last = ordered.last, now >= last.end {
             return last.phase
+        }
+
+        if let first = ordered.first, now < first.start {
+            return .idle
         }
 
         return .idle
     }
 
+    /// Next phase transition boundary after `now`.
     func nextTransition(after now: Date) -> PhaseWindow? {
-        phases.first { $0.start > now }
+        let ordered = phases.sorted { $0.start < $1.start }
+        return ordered.first { $0.start > now || ($0.end > now && !$0.durationIsZero) }
+    }
+
+    func window(for phase: ShiftTimelinePhase) -> PhaseWindow? {
+        phases.first { $0.phase == phase }
     }
 
     func progressFraction(at now: Date) -> Double {

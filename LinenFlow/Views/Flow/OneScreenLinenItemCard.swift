@@ -53,6 +53,7 @@ struct OneScreenLinenItemCard: View {
     @State private var distributionExpanded = true
     @State private var floorOrderDescending = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.linenFocusedCardMaxHeight) private var focusedCardMaxHeight
 
     private var cardBackgroundKey: String {
         "linen.card.background.\(item.id.uuidString)"
@@ -135,9 +136,21 @@ struct OneScreenLinenItemCard: View {
         }
     }
 
+    @ViewBuilder
+    private var scrollableCardContent: some View {
+        if isFocused, let maxHeight = focusedCardMaxHeight {
+            ScrollView(.vertical, showsIndicators: true) {
+                cardContent
+            }
+            .frame(maxHeight: maxHeight)
+        } else {
+            cardContent
+        }
+    }
+
     var body: some View {
         PremiumCard(accentColor: accent, style: cardBackground.cardStyle, isCurrent: isFocused) {
-            cardContent
+            scrollableCardContent
         }
         .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: isCompactPinned)
         .contextMenu {

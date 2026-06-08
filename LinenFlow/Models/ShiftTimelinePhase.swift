@@ -1,6 +1,7 @@
 import Foundation
 
-enum ShiftTimelinePhase: Int, Codable, CaseIterable, Comparable, Hashable, Sendable {
+/// Canonical phase enum for reminders, Live Activity, geofence reactions, and lateness checks.
+enum ShiftTimelinePhase: Int, Codable, CaseIterable, Comparable, Hashable {
     case idle = 0
     case preSleep = 1
     case sleep = 2
@@ -17,7 +18,9 @@ enum ShiftTimelinePhase: Int, Codable, CaseIterable, Comparable, Hashable, Senda
     case beDown = 13
     case shiftEnd = 14
 
-    static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
+    static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
 
     var displayName: String {
         switch self {

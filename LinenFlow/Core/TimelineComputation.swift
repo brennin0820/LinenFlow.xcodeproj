@@ -1,77 +1,98 @@
 import Foundation
 
-private func addMinutes(_ minutes: Int, to date: Date, calendar: Calendar) -> Date {
-    guard let result = calendar.date(byAdding: DateComponents(minute: minutes), to: date) else {
-        preconditionFailure("Calendar add failed for \(minutes) minutes")
-    }
-    return result
-}
+private let shiftCountdownLeadMinutes = 5
 
-private func subtractMinutes(_ minutes: Int, from date: Date, calendar: Calendar) -> Date {
-    addMinutes(-minutes, to: date, calendar: calendar)
-}
-
-/// Compute the full phase timeline for a shift (HimmerFlow spec §2).
-/// All date math uses `calendar.date(byAdding:to:)` — never TimeInterval subtraction.
+/// Computes the full phase timeline for a shift using calendar-safe date arithmetic.
 func computeTimeline(
     clockInTime: Date,
     settings: ShiftPlannerSettings,
     shiftDurationMinutes: Int,
     calendar: Calendar = .autoupdatingCurrent
 ) -> ShiftTimelineSnapshot {
-    let anchor = clockInTime
-
-    let shiftEndStart = addMinutes(shiftDurationMinutes, to: anchor, calendar: calendar)
-    let beDownEnd = addMinutes(settings.beDownMinutesAfterShift, to: shiftEndStart, calendar: calendar)
-    let shiftCountdownStart = subtractMinutes(5, from: anchor, calendar: calendar)
-
-    let arrivalStart = subtractMinutes(settings.arrivalBufferMinutes, from: anchor, calendar: calendar)
-    let walkInStart = subtractMinutes(settings.walkInMinutes, from: arrivalStart, calendar: calendar)
-    let parkingStart = subtractMinutes(settings.parkingWalkMinutes, from: walkInStart, calendar: calendar)
-    let commuteStart = subtractMinutes(settings.commuteDurationMinutes, from: parkingStart, calendar: calendar)
-    let leaveTime = commuteStart
-    let walkToCarStart = subtractMinutes(settings.walkToCarMinutes, from: commuteStart, calendar: calendar)
-    let getReadyStart = subtractMinutes(settings.getReadyDurationMinutes, from: walkToCarStart, calendar: calendar)
-    let wakeTime = getReadyStart
-    let sleepStart = subtractMinutes(settings.sleepDurationMinutes, from: getReadyStart, calendar: calendar)
-    let preSleepStart = subtractMinutes(settings.preSleepWindDownMinutes, from: sleepStart, calendar: calendar)
-
-    let commuteCollapsed = settings.commuteDurationMinutes <= 0
-        && settings.parkingWalkMinutes <= 0
-        && settings.walkInMinutes <= 0
-        && settings.arrivalBufferMinutes <= 0
-
-    var windows: [ShiftTimelineSnapshot.PhaseWindow] = [
-        .init(phase: .preSleep, start: preSleepStart, end: sleepStart),
-        .init(phase: .sleep, start: sleepStart, end: getReadyStart),
-        .init(phase: .wake, start: wakeTime, end: wakeTime),
-        .init(phase: .getReady, start: getReadyStart, end: walkToCarStart),
-        .init(phase: .walkToCar, start: walkToCarStart, end: commuteStart),
-        .init(phase: .leave, start: leaveTime, end: leaveTime),
-    ]
-
-    if commuteCollapsed {
-        windows.append(.init(phase: .commute, start: commuteStart, end: commuteStart))
-        windows.append(.init(phase: .parking, start: commuteStart, end: commuteStart))
-        windows.append(.init(phase: .walkIn, start: commuteStart, end: commuteStart))
-        windows.append(.init(phase: .arrival, start: commuteStart, end: anchor))
-    } else {
-        windows.append(.init(phase: .commute, start: commuteStart, end: parkingStart))
-        windows.append(.init(phase: .parking, start: parkingStart, end: walkInStart))
-        windows.append(.init(phase: .walkIn, start: walkInStart, end: arrivalStart))
-        windows.append(.init(phase: .arrival, start: arrivalStart, end: anchor))
+    func subtractMinutes(_ minutes: Int, from date: Date) -> Date {
+        guard minutes > 0 else { return date }
+        guard let result = calendar.date(byAdding: DateComponents(minute: -minutes), to: date) else {
+            preconditionFailure("Calendar failed subtracting \(minutes) minutes")
+        }
+        return result
     }
 
-    windows.append(contentsOf: [
-        .init(phase: .shiftCountdown, start: shiftCountdownStart, end: anchor),
-        .init(phase: .shiftActive, start: anchor, end: shiftEndStart),
+    func addMinutes(_ minutes: Int, to date: Date) -> Date {
+        guard minutes > 0 else { return date }
+        guard let result = calendar.date(byAdding: DateComponents(minute: minutes), to: date) else {
+            preconditionFailure("Calendar failed adding \(minutes) minutes")
+        }
+        return result
+    }
+
+    // Backward from clock-in anchor
+    let arrivalStart = subtractMinutes(settings.arrivalBufferMinutes, from: clockInTime)
+    let walkInStart = subtractMinutes(settings.walkInMinutes, from: arrivalStart)
+    let parkingStart = subtractMinutes(settings.parkingWalkMinutes, from: walkInStart)
+    let commuteStart = subtractMinutes(settings.commuteDurationMinutes, from: parkingStart)
+    let leaveStart = commuteStart
+    let walkToCarStart = subtractMinutes(settings.walkToCarMinutes, from: leaveStart)
+    let getReadyStart = subtractMinutes(settings.getReadyDurationMinutes, from: walkToCarStart)
+    let wakeStart = getReadyStart
+    let sleepStart = subtractMinutes(settings.sleepDurationMinutes, from: wakeStart)
+    let preSleepStart = subtractMinutes(settings.preSleepWindDownMinutes, from: sleepStart)
+
+    // Forward from clock-in anchor
+    let shiftCountdownStart = subtractMinutes(shiftCountdownLeadMinutes, from: clockInTime)
+    let shiftActiveEnd = addMinutes(shiftDurationMinutes, to: clockInTime)
+    let shiftEndStart = shiftActiveEnd
+    let beDownEnd = addMinutes(settings.beDownMinutesAfterShift, to: shiftEndStart)
+
+    let phases: [ShiftTimelineSnapshot.PhaseWindow] = [
+        .init(phase: .preSleep, start: preSleepStart, end: sleepStart),
+        .init(phase: .sleep, start: sleepStart, end: wakeStart),
+        .init(phase: .wake, start: wakeStart, end: wakeStart),
+        .init(phase: .getReady, start: getReadyStart, end: walkToCarStart),
+        .init(phase: .walkToCar, start: walkToCarStart, end: leaveStart),
+        .init(phase: .leave, start: leaveStart, end: leaveStart),
+        .init(phase: .commute, start: commuteStart, end: parkingStart),
+        .init(phase: .parking, start: parkingStart, end: walkInStart),
+        .init(phase: .walkIn, start: walkInStart, end: arrivalStart),
+        .init(phase: .arrival, start: arrivalStart, end: clockInTime),
+        .init(phase: .shiftCountdown, start: shiftCountdownStart, end: clockInTime),
+        .init(phase: .shiftActive, start: clockInTime, end: shiftActiveEnd),
         .init(phase: .shiftEnd, start: shiftEndStart, end: shiftEndStart),
         .init(phase: .beDown, start: shiftEndStart, end: beDownEnd),
-    ])
+    ]
+
+    let shiftDate = calendar.startOfDay(for: clockInTime)
 
     return ShiftTimelineSnapshot(
-        shiftDate: anchor,
-        phases: windows.sorted { $0.phase < $1.phase },
-        primaryAnchor: anchor
+        shiftDate: shiftDate,
+        phases: phases,
+        primaryAnchor: clockInTime
     )
+}
+
+/// Returns true when prep/transit phase windows do not overlap (excludes arrival vs shiftCountdown at clock-in).
+func phasesHaveNoOverlap(_ phases: [ShiftTimelineSnapshot.PhaseWindow]) -> Bool {
+    let overlappingAllowed: Set<ShiftTimelinePhase> = [.arrival, .shiftCountdown, .beDown, .shiftActive]
+    let timedPhases = phases
+        .filter { $0.start < $0.end && !overlappingAllowed.contains($0.phase) }
+        .sorted { $0.start < $1.start }
+
+    for index in 0 ..< timedPhases.count - 1 {
+        if timedPhases[index].end > timedPhases[index + 1].start {
+            return false
+        }
+    }
+    return true
+}
+
+/// Verifies that adding `minutes` via the calendar from `start` reaches `end`.
+func calendarMinuteSpan(
+    from start: Date,
+    minutes: Int,
+    to end: Date,
+    calendar: Calendar
+) -> Bool {
+    guard let computed = calendar.date(byAdding: DateComponents(minute: minutes), to: start) else {
+        return false
+    }
+    return computed == end
 }

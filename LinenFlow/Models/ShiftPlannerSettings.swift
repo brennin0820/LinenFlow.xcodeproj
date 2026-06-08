@@ -3,6 +3,9 @@ import SwiftData
 
 @Model
 final class ShiftPlannerSettings {
+    /// The single hard anchor: time the user must be clocked in.
+    var clockInTime: DateComponents
+
     var sleepDurationMinutes: Int
     var getReadyDurationMinutes: Int
     var walkToCarMinutes: Int
@@ -12,11 +15,11 @@ final class ShiftPlannerSettings {
     var arrivalBufferMinutes: Int
     var preSleepWindDownMinutes: Int
     var beDownMinutesAfterShift: Int
-    var monitoringTierRaw: String
+    var monitoringTier: MonitoringTier
     var hasCompletedOnboarding: Bool
-    @Relationship(deleteRule: .nullify) var homeLocation: SavedLocation?
+    var homeLocation: SavedLocation?
 
-    enum MonitoringTier: String, Codable, CaseIterable, Sendable {
+    enum MonitoringTier: String, Codable, CaseIterable {
         case manual
         case smart
         case activeCommute
@@ -30,12 +33,8 @@ final class ShiftPlannerSettings {
         }
     }
 
-    var monitoringTier: MonitoringTier {
-        get { MonitoringTier(rawValue: monitoringTierRaw) ?? .smart }
-        set { monitoringTierRaw = newValue.rawValue }
-    }
-
     init(
+        clockInTime: DateComponents = DateComponents(hour: 6, minute: 0),
         sleepDurationMinutes: Int = 480,
         getReadyDurationMinutes: Int = 45,
         walkToCarMinutes: Int = 5,
@@ -46,9 +45,10 @@ final class ShiftPlannerSettings {
         preSleepWindDownMinutes: Int = 30,
         beDownMinutesAfterShift: Int = 60,
         monitoringTier: MonitoringTier = .smart,
-        homeLocation: SavedLocation? = nil,
-        hasCompletedOnboarding: Bool = false
+        hasCompletedOnboarding: Bool = false,
+        homeLocation: SavedLocation? = nil
     ) {
+        self.clockInTime = clockInTime
         self.sleepDurationMinutes = sleepDurationMinutes
         self.getReadyDurationMinutes = getReadyDurationMinutes
         self.walkToCarMinutes = walkToCarMinutes
@@ -58,8 +58,8 @@ final class ShiftPlannerSettings {
         self.arrivalBufferMinutes = arrivalBufferMinutes
         self.preSleepWindDownMinutes = preSleepWindDownMinutes
         self.beDownMinutesAfterShift = beDownMinutesAfterShift
-        self.monitoringTierRaw = monitoringTier.rawValue
-        self.homeLocation = homeLocation
+        self.monitoringTier = monitoringTier
         self.hasCompletedOnboarding = hasCompletedOnboarding
+        self.homeLocation = homeLocation
     }
 }

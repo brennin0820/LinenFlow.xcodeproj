@@ -1,4 +1,24 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
+
+enum KeyboardEditingLayout {
+    /// Visible gap between the active card bottom edge and the keyboard top.
+    static let keyboardGap: CGFloat = 16
+}
+
+private struct LinenFocusedCardMaxHeightKey: EnvironmentKey {
+    static let defaultValue: CGFloat? = nil
+}
+
+extension EnvironmentValues {
+    /// Max height for scrollable focused card content (set by `HomeView` when keyboard is visible).
+    var linenFocusedCardMaxHeight: CGFloat? {
+        get { self[LinenFocusedCardMaxHeightKey.self] }
+        set { self[LinenFocusedCardMaxHeightKey.self] = newValue }
+    }
+}
 
 enum KeyboardPinnedEditorMotion {
     static let lift = Animation.spring(response: 0.42, dampingFraction: 0.86)
@@ -34,6 +54,20 @@ enum KeyboardPinnedEditorMotion {
 
     static var listCrossfadeTransition: AnyTransition {
         .opacity
+    }
+}
+
+enum KeyboardEditingFocus {
+    /// Dismisses the software keyboard without clearing edit mode or `focusedItemID`.
+    static func dismissKeyboard() {
+        #if canImport(UIKit)
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil
+        )
+        #endif
     }
 }
 
@@ -104,6 +138,82 @@ struct KeyboardPinnedPanel<Content: View>: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Editing \(itemName), \(editingIndex + 1) of \(editingTotal)")
         .transition(KeyboardPinnedEditorMotion.panelLiftTransition)
+    }
+}
+
+/// Absorbs background taps: dismisses the keyboard only — never clears `focusedItemID` or edit mode.
+/// Prefer this over `allowsHitTesting(false)` on dimmed cards, which lets hits fall through to cards behind.
+struct KeyboardEditingTapAbsorber: ViewModifier {
+    let isActive: Bool
+    var dimmed: Bool = false
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if isActive {
+                Color.black.opacity(dimmed ? 0.22 : 0.001)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        KeyboardEditingFocus.dismissKeyboard()
+                    }
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+}
+
+extension View {
+    func keyboardEditingTapAbsorber(isActive: Bool, dimmed: Bool = false) -> some View {
+        modifier(KeyboardEditingTapAbsorber(isActive: isActive, dimmed: dimmed))
+    }
+
+    /// Tracks software-keyboard overlap from the bottom of the key window (animated with keyboard).
+    func observesKeyboardBottomInset(_ inset: Binding<CGFloat>, reduceMotion: Bool = false) -> some View {
+        modifier(KeyboardBottomInsetObserver(bottomInset: inset, reduceMotion: reduceMotion))
+    }
+}
+
+private struct KeyboardBottomInsetObserver: ViewModifier {
+    @Binding var bottomInset: CGFloat
+    var reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
+                applyInset(from: notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { notification in
+                withAnimation(keyboardAnimation(from: notification)) {
+                    bottomInset = 0
+                }
+            }
+    }
+
+    private func applyInset(from notification: Notification) {
+        #if canImport(UIKit)
+        guard
+            let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+            let window = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .flatMap(\.windows)
+                .first(where: \.isKeyWindow)
+        else { return }
+
+        let converted = window.convert(frame, from: nil)
+        let overlap = max(0, window.bounds.maxY - converted.minY)
+        withAnimation(keyboardAnimation(from: notification)) {
+            bottomInset = overlap
+        }
+        #endif
+    }
+
+    private func keyboardAnimation(from notification: Notification) -> Animation? {
+        if reduceMotion { return nil }
+        #if canImport(UIKit)
+        let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
+        return .easeInOut(duration: duration)
+        #else
+        return KeyboardPinnedEditorMotion.lift
+        #endif
     }
 }
 
