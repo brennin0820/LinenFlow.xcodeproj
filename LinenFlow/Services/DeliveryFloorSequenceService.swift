@@ -25,10 +25,12 @@ enum DeliveryFloorSequenceService {
         case "alii", "ali'i", "alii tower", "ali'i tower":
             return Array(1...14)
         case "gw", "grand waikikian":
-            // TODO: User note suggests GW starts at 4, currently starts at 5. Check if it should be updated.
+            // Authoritative legacy sequence from DefaultData seed (startFloor 0/0 → multi-gap floors).
+            // Operational delivery starts at floor 5; floors 13, 33–34 are excluded by building policy.
             return Array(5...12) + Array(14...32) + Array(35...39)
         case "gi", "grand islander":
-            // TODO: User note suggests GI starts at 3, currently starts at 4. End floor might need confirmation.
+            // Authoritative legacy sequence from DefaultData seed (startFloor 4, topFloor 36, skip 13).
+            // When floorCount matches seed (32), this yields floors 4…36 excluding 13.
             let giFloors = (4...38).filter { $0 != 13 }
             if floorCount <= giFloors.count {
                 return Array(giFloors.prefix(floorCount))

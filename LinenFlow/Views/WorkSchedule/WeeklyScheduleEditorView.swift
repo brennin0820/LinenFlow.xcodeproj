@@ -208,17 +208,7 @@ struct WorkScheduleDayCard: View {
     // MARK: - Tower color + badge
 
     private var towerColor: Color {
-        switch day.assignedTowerName.lowercased() {
-        case "rainbow": return Color(red: 0.0, green: 0.624, blue: 0.859)
-        case "ali'i", "alii": return Color(red: 0.055, green: 0.561, blue: 0.427)
-        case "tapa": return Color(red: 0.788, green: 0.416, blue: 0.322)
-        case "diamond": return Color(red: 0.435, green: 0.486, blue: 0.522)
-        case "kalia": return Color(red: 0.482, green: 0.682, blue: 0.498)
-        case "lagoon": return Color(red: 0.0, green: 0.686, blue: 0.780)
-        case "grand waikikian": return Color(red: 0.247, green: 0.306, blue: 0.549)
-        case "grand islander": return Color(red: 0.851, green: 0.604, blue: 0.169)
-        default: return .blue
-        }
+        WorkScheduleTowerColor.color(for: day.assignedTowerName)
     }
 
     @ViewBuilder

@@ -3,7 +3,7 @@ import SwiftUI
 struct ShiftEventCountdownCard: View {
     let plan: WorkdayPlan
 
-    private var accentColor: Color { towerAccentColor(plan.assignedTowerName) }
+    private var accentColor: Color { WorkScheduleTowerColor.color(for: plan.assignedTowerName) }
 
     private var events: [(label: String, icon: String, time: Date)] {[
         ("Get Ready",     "figure.stand",          plan.startGettingReadyTime),
@@ -143,19 +143,5 @@ private struct ShiftEventRow: View {
         if h > 0 { return m > 0 ? "\(h)h \(m)m" : "\(h)h" }
         if m > 0 { return "\(m)m \(s)s" }
         return "\(s)s"
-    }
-}
-
-private func towerAccentColor(_ name: String) -> Color {
-    switch name.lowercased() {
-    case "rainbow":                    return Color(red: 0.0,   green: 0.624, blue: 0.859)
-    case "ali'i", "alii":              return Color(red: 0.055, green: 0.561, blue: 0.427)
-    case "tapa":                       return Color(red: 0.788, green: 0.416, blue: 0.322)
-    case "diamond":                    return Color(red: 0.435, green: 0.486, blue: 0.522)
-    case "kalia":                      return Color(red: 0.482, green: 0.682, blue: 0.498)
-    case "lagoon":                     return Color(red: 0.0,   green: 0.686, blue: 0.780)
-    case "grand waikikian", "gw":      return Color(red: 0.247, green: 0.306, blue: 0.549)
-    case "grand islander", "gi":       return Color(red: 0.851, green: 0.604, blue: 0.169)
-    default:                           return .blue
     }
 }

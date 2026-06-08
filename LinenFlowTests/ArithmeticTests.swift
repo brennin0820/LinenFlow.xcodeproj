@@ -38,6 +38,15 @@ final class ArithmeticTests: XCTestCase {
         }
     }
 
+    private func assertError(_ input: String, _ expected: ArithmeticError, file: StaticString = #filePath, line: UInt = #line) {
+        switch evaluateDouble(input) {
+        case .success(let v):
+            XCTFail("expected \(expected) for '\(input)', got value \(v)", file: file, line: line)
+        case .failure(let err):
+            XCTAssertEqual(err, expected, "input: \(input)", file: file, line: line)
+        }
+    }
+
     // 1
     func test_01_multiplyStar() { assertValue("245*11", 2695) }
     // 2
@@ -105,5 +114,28 @@ final class ArithmeticTests: XCTestCase {
 
     func test_26_periodCanChainWithOtherOperators() {
         assertValue("245.2+60", 550)
+    }
+
+    func test_27_multipleDotMultipliersFail() {
+        assertError("245.2.3", .multipleDotMultipliers)
+    }
+
+    func test_28_adjacentGroupedExpressionsFail() {
+        assertError("(245*11)(245*2)", .multipleGroupedExpressions)
+    }
+
+    func test_29_extraClosingParenIsMismatchedNotPartial() {
+        assertError("(245*11)+60)", .mismatchedParens)
+    }
+
+    func test_30_completeParenthesizedExpressionSucceeds() {
+        assertValue("(245*11)+60", 2755)
+        assertValue("(245*11)", 2695)
+        assertValue("245.2", 490)
+    }
+
+    func test_31_trailingOperatorIsPartial() {
+        assertError("245*11+", .partial)
+        assertError("245.", .partial)
     }
 }

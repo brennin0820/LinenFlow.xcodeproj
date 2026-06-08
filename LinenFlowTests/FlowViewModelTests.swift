@@ -200,6 +200,21 @@ final class FlowViewModelTests: XCTestCase {
         XCTAssertEqual(doubleCoverFloor1?.suggestedBundles, 2)
     }
 
+    func test_towerParRequirements_matchesCalculationSummary() {
+        viewModel.loadDiamondDHeadExample()
+
+        let summaryNames = Set(viewModel.calculationSummaries.map(\.itemName))
+        for requirement in viewModel.towerParRequirements where summaryNames.contains(requirement.itemName) {
+            let summary = viewModel.calculationSummaries.first { $0.itemName == requirement.itemName }
+            XCTAssertNotNil(summary, "Missing summary for \(requirement.itemName)")
+            XCTAssertEqual(requirement.requiredBundles, summary?.requiredBundles, requirement.itemName)
+            XCTAssertEqual(requirement.requiredPieces, summary?.requiredPieces, requirement.itemName)
+            XCTAssertEqual(requirement.pieceGap, summary?.differencePieces, requirement.itemName)
+            XCTAssertEqual(requirement.bundleGap, summary?.differenceBundles, requirement.itemName)
+            XCTAssertEqual(requirement.receivedBundles, summary?.fullBundles, requirement.itemName)
+        }
+    }
+
     func test_giDeliveryPlanUsesPieces() throws {
         let towers = try container.mainContext.fetch(FetchDescriptor<Tower>())
         let gi = try XCTUnwrap(towers.first { $0.name == "GI" })

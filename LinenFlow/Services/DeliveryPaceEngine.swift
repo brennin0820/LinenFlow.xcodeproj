@@ -106,7 +106,7 @@ struct DeliveryPaceEngine: Sendable {
 
     private func remainingBundleCount(from summaries: [CalculationSummary]) -> Int {
         summaries.reduce(0) { total, summary in
-            total + max(summary.deliverableBundles, summary.fullBundles)
+            total + summary.deliverableBundles
         }
     }
 

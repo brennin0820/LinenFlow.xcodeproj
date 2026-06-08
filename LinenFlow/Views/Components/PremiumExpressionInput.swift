@@ -22,7 +22,7 @@ struct PremiumExpressionInput: View {
             inputField
             if showArithmeticKeys {
                 ArithmeticKeypadStrip { token in
-                    expression.append(token)
+                    appendToken(token)
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
@@ -59,7 +59,12 @@ struct PremiumExpressionInput: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .onChange(of: expression) { _, new in
+                .onChange(of: expression) { old, new in
+                    let filtered = ArithmeticInputRules.filter(new, previous: old)
+                    if filtered != new {
+                        expression = filtered
+                        return
+                    }
                     recompute(new)
                 }
                 .onSubmit {
@@ -110,6 +115,11 @@ struct PremiumExpressionInput: View {
         }
     }
 
+    private func appendToken(_ token: String) {
+        guard ArithmeticInputRules.canAppend(token, to: expression) else { return }
+        expression.append(token)
+    }
+
     private func recompute(_ input: String) {
         let trimmed = input.trimmingCharacters(in: .whitespaces)
         if trimmed.isEmpty {
@@ -132,6 +142,8 @@ struct PremiumExpressionInput: View {
         case .invalidCharacter(let c): return "Invalid character '\(c)'."
         case .partial: return "Incomplete expression."
         case .mismatchedParens: return "Mismatched parentheses."
+        case .multipleDotMultipliers: return "Use one \".\" multiply (e.g. 245.2)."
+        case .multipleGroupedExpressions: return "Add +, −, ×, or ÷ between parts."
         case .divisionByZero: return "Cannot divide by zero."
         case .negativeNotAllowed: return "Pieces must be 0 or more."
         case .fractionalNotAllowed: return "Pieces must be a whole number."

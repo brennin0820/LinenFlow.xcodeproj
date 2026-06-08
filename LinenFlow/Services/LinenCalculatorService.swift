@@ -25,6 +25,32 @@ enum LinenCalculatorService {
         max(0, floorCount) * max(0, parCount)
     }
 
+    /// Par is bundles per floor (bundle-delivery towers).
+    static func calculateRequiredBundles(floorCount: Int, parCount: Int) -> Int {
+        max(0, floorCount) * max(0, parCount)
+    }
+
+    static func calculateRequiredPiecesFromBundlePar(
+        floorCount: Int,
+        parCount: Int,
+        bundleSize: Int
+    ) -> Int {
+        calculateRequiredBundles(floorCount: floorCount, parCount: parCount) * max(0, bundleSize)
+    }
+
+    static func calculateRequiredBundlesFromPieces(requiredPieces: Int, bundleSize: Int) -> Int {
+        guard bundleSize > 0 else { return 0 }
+        return Int(ceil(Double(max(0, requiredPieces)) / Double(bundleSize)))
+    }
+
+    static func calculateSignedDifferenceBundlesFromPieces(differencePieces: Int, bundleSize: Int) -> Int {
+        guard bundleSize > 0 else { return 0 }
+        if differencePieces >= 0 {
+            return differencePieces / bundleSize
+        }
+        return -Int(ceil(Double(abs(differencePieces)) / Double(bundleSize)))
+    }
+
     static func calculateDifference(receivedPieces: Int, requiredPieces: Int) -> Int {
         receivedPieces - requiredPieces
     }
@@ -114,7 +140,8 @@ enum LinenCalculatorService {
         receivedPieces: Int,
         floorCount: Int,
         parCount: Int,
-        bundleSize: Int
+        bundleSize: Int,
+        parCountsBundles: Bool = true
     ) -> CalculationSummary {
         let (fullBundles, loosePieces) = convertPiecesToBundles(pieces: receivedPieces, bundleSize: bundleSize)
         let bundlePlan = calculateBundleDeliveryPlan(
@@ -122,10 +149,35 @@ enum LinenCalculatorService {
             floorCount: floorCount,
             parPerFloor: parCount
         )
-        let requiredPieces = calculateRequiredPieces(floorCount: floorCount, parCount: parCount)
-        let requiredBundles: Int? = bundleSize > 0 ? requiredPieces / bundleSize : nil
+
+        let requiredBundlesValue: Int?
+        let requiredPieces: Int
+        if parCountsBundles {
+            requiredBundlesValue = bundleSize > 0
+                ? calculateRequiredBundles(floorCount: floorCount, parCount: parCount)
+                : nil
+            requiredPieces = bundleSize > 0
+                ? calculateRequiredPiecesFromBundlePar(floorCount: floorCount, parCount: parCount, bundleSize: bundleSize)
+                : calculateRequiredPieces(floorCount: floorCount, parCount: parCount)
+        } else {
+            requiredPieces = calculateRequiredPieces(floorCount: floorCount, parCount: parCount)
+            requiredBundlesValue = bundleSize > 0
+                ? calculateRequiredBundlesFromPieces(requiredPieces: requiredPieces, bundleSize: bundleSize)
+                : nil
+        }
+
         let difference = calculateDifference(receivedPieces: receivedPieces, requiredPieces: requiredPieces)
-        let differenceBundles: Int = bundleSize > 0 ? difference / bundleSize : 0
+        let differenceBundles: Int
+        if parCountsBundles {
+            differenceBundles = fullBundles - (requiredBundlesValue ?? 0)
+        } else if bundleSize > 0 {
+            differenceBundles = calculateSignedDifferenceBundlesFromPieces(
+                differencePieces: difference,
+                bundleSize: bundleSize
+            )
+        } else {
+            differenceBundles = 0
+        }
         let status = calculateStatus(difference: difference)
         let exactPerFloor = calculateExactPerFloor(receivedPieces: receivedPieces, floorCount: floorCount)
         let basePerFloor = calculateBasePerFloor(receivedPieces: receivedPieces, floorCount: floorCount)
@@ -138,7 +190,7 @@ enum LinenCalculatorService {
             fullBundles: fullBundles,
             loosePieces: loosePieces,
             requiredPieces: requiredPieces,
-            requiredBundles: requiredBundles,
+            requiredBundles: requiredBundlesValue,
             maxAllowedBundles: bundlePlan.maxAllowedBundles,
             deliverableBundles: bundlePlan.deliverableBundles,
             shortageBundles: bundlePlan.shortageBundles,

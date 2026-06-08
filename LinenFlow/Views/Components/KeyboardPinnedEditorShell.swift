@@ -54,6 +54,7 @@ enum KeyboardEditingHaptics {
 struct KeyboardEditingPlaceholder: View {
     let itemName: String
     let accentColor: Color
+    @Environment(AppThemeSettings.self) private var theme
 
     var body: some View {
         PremiumCard(accentColor: accentColor, style: .standard) {
@@ -79,7 +80,7 @@ struct KeyboardEditingPlaceholder: View {
             }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous)
                 .stroke(accentColor.opacity(0.32), lineWidth: 1.5)
         }
         .opacity(0.58)

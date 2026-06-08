@@ -10,7 +10,7 @@ struct WazeRouteSettingsCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 // Header
                 HStack(spacing: 10) {
-                    Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
+                    Image(systemName: "map.fill")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
                         .frame(width: 30, height: 30)

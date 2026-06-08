@@ -21,14 +21,6 @@ struct ShiftTabLegacyDeliveryArchive: View {
     @State private var savedAt: Date?
 
     @State private var isPaceExpanded = true
-    @State private var isTodayPlanExpanded = true
-    @State private var isCountdownExpanded = true
-    @State private var isCommuteExpanded = false
-    @State private var isAlarmsExpanded = false
-    @State private var isLeavingChecklistExpanded = false
-    @State private var isWeeklyScheduleExpanded = false
-    @State private var isWazeExpanded = false
-    @State private var isTranscriptExpanded = false
 
     var body: some View {
         NavigationStack {
@@ -39,8 +31,8 @@ struct ShiftTabLegacyDeliveryArchive: View {
                             shiftHeaderCard
                             timingCard
 
-                            collapsibleSection(
-                                "Pace",
+                            CollapsibleSection(
+                                title: "Pace",
                                 systemImage: "gauge.with.dots.needle.50percent",
                                 tint: paceColor,
                                 isExpanded: $isPaceExpanded
@@ -52,82 +44,21 @@ struct ShiftTabLegacyDeliveryArchive: View {
                                 savedBanner(savedConfirmation)
                             }
 
-                            collapsibleSection(
-                                "Today's Shift Plan",
-                                systemImage: "calendar.badge.clock",
-                                tint: .blue,
-                                isExpanded: $isTodayPlanExpanded
-                            ) {
-                                TodayShiftPlanCard(
-                                    viewModel: plannerViewModel,
-                                    onOpenWaze: { plannerViewModel.openWaze() }
-                                )
-                            }
+                            TodayShiftPlanCard(
+                                viewModel: plannerViewModel,
+                                onOpenWaze: { plannerViewModel.openWaze() }
+                            )
 
                             if plannerViewModel.isTodayWorkday, let plan = plannerViewModel.todayPlan {
-                                collapsibleSection(
-                                    "Shift Countdown",
-                                    systemImage: "timer",
-                                    tint: .orange,
-                                    isExpanded: $isCountdownExpanded
-                                ) {
-                                    ShiftEventCountdownCard(plan: plan)
-                                }
+                                ShiftEventCountdownCard(plan: plan)
                             }
 
-                            collapsibleSection(
-                                "Commute",
-                                systemImage: "car.fill",
-                                tint: .green,
-                                isExpanded: $isCommuteExpanded
-                            ) {
-                                CommutePlanCard(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Alarms",
-                                systemImage: "alarm.fill",
-                                tint: .red,
-                                isExpanded: $isAlarmsExpanded
-                            ) {
-                                AlarmBuilderCard(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Leaving Checklist",
-                                systemImage: "checklist",
-                                tint: .mint,
-                                isExpanded: $isLeavingChecklistExpanded
-                            ) {
-                                LeavingChecklistCard(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Weekly Schedule",
-                                systemImage: "calendar",
-                                tint: .indigo,
-                                isExpanded: $isWeeklyScheduleExpanded
-                            ) {
-                                WeeklyScheduleEditorView(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Route Settings",
-                                systemImage: "map.fill",
-                                tint: .cyan,
-                                isExpanded: $isWazeExpanded
-                            ) {
-                                WazeRouteSettingsCard(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Schedule Notes",
-                                systemImage: "note.text",
-                                tint: .yellow,
-                                isExpanded: $isTranscriptExpanded
-                            ) {
-                                ScheduleTranscriptCard(viewModel: plannerViewModel)
-                            }
+                            CommutePlanCard(viewModel: plannerViewModel)
+                            AlarmBuilderCard(viewModel: plannerViewModel)
+                            LeavingChecklistCard(viewModel: plannerViewModel)
+                            WeeklyScheduleEditorView(viewModel: plannerViewModel)
+                            WazeRouteSettingsCard(viewModel: plannerViewModel)
+                            ScheduleTranscriptCard(viewModel: plannerViewModel)
 
                             Spacer(minLength: 24)
                         }
@@ -1635,55 +1566,6 @@ struct ShiftTabLegacyDeliveryArchive: View {
         }
         return color
     }
-
-    @ViewBuilder
-    private func collapsibleSection<Content: View>(
-        _ title: String,
-        systemImage: String,
-        tint: Color,
-        isExpanded: Binding<Bool>,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(spacing: 8) {
-            Button {
-                withAnimation(.snappy(duration: 0.22)) {
-                    isExpanded.wrappedValue.toggle()
-                }
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: systemImage)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(tint)
-                        .frame(width: 28, height: 28)
-                        .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    Text(title)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white)
-                    Spacer()
-                    Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.5))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(tint.opacity(0.18), lineWidth: 1)
-                )
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(title)
-            .accessibilityHint(isExpanded.wrappedValue ? "Double tap to collapse." : "Double tap to expand.")
-
-            if isExpanded.wrappedValue {
-                content()
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-        .animation(.snappy(duration: 0.22), value: isExpanded.wrappedValue)
-    }
 }
 
 private struct ExtraLinenRow: Identifiable {
@@ -1693,6 +1575,7 @@ private struct ExtraLinenRow: Identifiable {
     let loosePieces: Int
     let extraPieces: Int
     let shortagePieces: Int
+    let shortageBundles: Int
     let bundleSize: Int
     let useBundles: Bool
 
@@ -1703,6 +1586,7 @@ private struct ExtraLinenRow: Identifiable {
         loosePieces = max(0, summary.loosePieces)
         extraPieces = max(0, summary.differencePieces)
         shortagePieces = max(0, -summary.differencePieces)
+        shortageBundles = max(0, summary.shortageBundles)
         bundleSize = max(1, summary.bundleSize)
         self.useBundles = useBundles
     }
@@ -1724,12 +1608,12 @@ private struct ExtraLinenRow: Identifiable {
         if useBundles {
             if extraBundles > 0 { return "\(extraBundles) bdl" }
             if availableLoosePieces > 0 { return "\(availableLoosePieces) loose" }
-            if shortagePieces > 0 { return "short \(shortagePieces)" }
+            if shortageBundles > 0 { return "short \(shortageBundles) bdl" }
             return "0"
         }
 
         if extraPieces > 0 { return "+\(extraPieces) pcs" }
-        if shortagePieces > 0 { return "short \(shortagePieces)" }
+        if shortagePieces > 0 { return "short \(shortagePieces) pcs" }
         return "0"
     }
 
@@ -1742,8 +1626,8 @@ private struct ExtraLinenRow: Identifiable {
             if availableLoosePieces > 0 {
                 return "Loose pieces available"
             }
-            if shortagePieces > 0 {
-                return "\(shortagePieces) pcs short for this tower"
+            if shortageBundles > 0 {
+                return "\(shortageBundles) bundles short for this tower (\(shortagePieces) pcs)"
             }
             return "No extra after this tower"
         }

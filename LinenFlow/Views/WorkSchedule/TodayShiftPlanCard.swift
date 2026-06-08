@@ -15,7 +15,7 @@ struct TodayShiftPlanCard: View {
     // MARK: - Work Night Hero
 
     private func workNightCard(plan: WorkdayPlan) -> some View {
-        let towerColor = towerAccentColor(plan.assignedTowerName)
+        let towerColor = WorkScheduleTowerColor.color(for: plan.assignedTowerName)
         return PremiumCard(accentColor: towerColor) {
             VStack(alignment: .leading, spacing: 14) {
                 // Header
@@ -269,17 +269,4 @@ struct TodayShiftPlanCard: View {
             .overlay(Capsule().stroke(color.opacity(0.22), lineWidth: 1))
     }
 
-    private func towerAccentColor(_ name: String) -> Color {
-        switch name.lowercased() {
-        case "rainbow": return Color(red: 0.0, green: 0.624, blue: 0.859)
-        case "ali'i", "alii": return Color(red: 0.055, green: 0.561, blue: 0.427)
-        case "tapa": return Color(red: 0.788, green: 0.416, blue: 0.322)
-        case "diamond": return Color(red: 0.435, green: 0.486, blue: 0.522)
-        case "kalia": return Color(red: 0.482, green: 0.682, blue: 0.498)
-        case "lagoon": return Color(red: 0.0, green: 0.686, blue: 0.780)
-        case "grand waikikian", "gw": return Color(red: 0.247, green: 0.306, blue: 0.549)
-        case "grand islander", "gi": return Color(red: 0.851, green: 0.604, blue: 0.169)
-        default: return .blue
-        }
-    }
 }

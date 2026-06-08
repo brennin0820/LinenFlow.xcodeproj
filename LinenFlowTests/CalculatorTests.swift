@@ -31,9 +31,9 @@ final class CalculatorTests: XCTestCase {
         XCTAssertEqual(BundleLibrary.canonicalName(for: "TC"), "Twin Cover")
     }
 
-    // MARK: - Bath Towel 2 bins in Lagoon
+    // MARK: - Bath Towel 2 bins (bundle-par semantics)
 
-    func test_bathTowelTwoBinsInLagoon() {
+    func test_bathTowelTwoBins_bundleParRequiredPieces() {
         let entry = ReceivingEntry(
             itemName: "Bath Towel",
             countMethod: .fixedBin,
@@ -50,18 +50,22 @@ final class CalculatorTests: XCTestCase {
             parCount: 14,
             bundleSize: 5
         )
-        XCTAssertEqual(summary.requiredPieces, 294)
-        XCTAssertEqual(summary.differencePieces, 196)
-        XCTAssertEqual(summary.status, .overage)
+        XCTAssertEqual(summary.requiredBundles, 294)
+        XCTAssertEqual(summary.requiredPieces, 1470)
+        XCTAssertEqual(summary.differencePieces, -980)
+        XCTAssertEqual(summary.differenceBundles, -196)
+        XCTAssertEqual(summary.status, .shortage)
+        XCTAssertEqual(summary.shortageBundles, 196)
+        XCTAssertEqual(summary.deliverableBundles, 98)
         XCTAssertEqual(summary.fullBundles, 98)
         XCTAssertEqual(summary.loosePieces, 0)
         XCTAssertEqual(summary.basePerFloorPieces, 23)
         XCTAssertEqual(summary.remainderPieces, 7)
     }
 
-    // MARK: - Manual shortage / exact / overage
+    // MARK: - Manual shortage / exact / overage (bundle-par)
 
-    func test_manualShortage() {
+    func test_manualShortage_bundlePar() {
         let summary = LinenCalculatorService.calculateSummary(
             itemName: "Bath Mat",
             receivedPieces: 60,
@@ -69,24 +73,28 @@ final class CalculatorTests: XCTestCase {
             parCount: 3,
             bundleSize: 10
         )
-        XCTAssertEqual(summary.requiredPieces, 63)
-        XCTAssertEqual(summary.differencePieces, -3)
+        XCTAssertEqual(summary.requiredBundles, 63)
+        XCTAssertEqual(summary.requiredPieces, 630)
+        XCTAssertEqual(summary.differencePieces, -570)
+        XCTAssertEqual(summary.differenceBundles, -57)
         XCTAssertEqual(summary.status, .shortage)
+        XCTAssertEqual(summary.shortageBundles, 57)
     }
 
-    func test_exactMatch() {
+    func test_exactMatch_bundlePar() {
         let summary = LinenCalculatorService.calculateSummary(
             itemName: "Bath Mat",
-            receivedPieces: 63,
+            receivedPieces: 630,
             floorCount: 21,
             parCount: 3,
             bundleSize: 10
         )
         XCTAssertEqual(summary.differencePieces, 0)
+        XCTAssertEqual(summary.differenceBundles, 0)
         XCTAssertEqual(summary.status, .exact)
     }
 
-    func test_overage() {
+    func test_overage_bundlePar() {
         let summary = LinenCalculatorService.calculateSummary(
             itemName: "Hand Towel",
             receivedPieces: 100,
@@ -94,9 +102,62 @@ final class CalculatorTests: XCTestCase {
             parCount: 4,
             bundleSize: 20
         )
-        XCTAssertEqual(summary.requiredPieces, 84)
-        XCTAssertEqual(summary.differencePieces, 16)
-        XCTAssertEqual(summary.status, .overage)
+        XCTAssertEqual(summary.requiredBundles, 84)
+        XCTAssertEqual(summary.requiredPieces, 1680)
+        XCTAssertEqual(summary.differencePieces, -1580)
+        XCTAssertEqual(summary.status, .shortage)
+    }
+
+    func test_bundleParSummary_alignsWithDeliveryPlan() {
+        let summary = LinenCalculatorService.calculateSummary(
+            itemName: "Twin Sheet",
+            receivedPieces: 50,
+            floorCount: 15,
+            parCount: 4,
+            bundleSize: 5
+        )
+        XCTAssertEqual(summary.requiredBundles, 60)
+        XCTAssertEqual(summary.requiredPieces, 300)
+        XCTAssertEqual(summary.maxAllowedBundles, 60)
+        XCTAssertEqual(summary.deliverableBundles, 10)
+        XCTAssertEqual(summary.shortageBundles, 50)
+        XCTAssertEqual(summary.differenceBundles, -50)
+        XCTAssertEqual(summary.differencePieces, -250)
+        XCTAssertEqual(summary.status, .shortage)
+    }
+
+    func test_requiredBundles_consistencyWithTowerParRequirement() {
+        let floorCount = 15
+        let parCount = 4
+        let bundleSize = 5
+        let summary = LinenCalculatorService.calculateSummary(
+            itemName: "Twin Sheet",
+            receivedPieces: 300,
+            floorCount: floorCount,
+            parCount: parCount,
+            bundleSize: bundleSize
+        )
+        let expectedRequiredBundles = LinenCalculatorService.calculateRequiredBundles(
+            floorCount: floorCount,
+            parCount: parCount
+        )
+        XCTAssertEqual(summary.requiredBundles, expectedRequiredBundles)
+        XCTAssertEqual(expectedRequiredBundles * bundleSize, summary.requiredPieces)
+    }
+
+    func test_differenceBundles_usesCeilForPieceParShortages() {
+        let summary = LinenCalculatorService.calculateSummary(
+            itemName: "Bath Mat",
+            receivedPieces: 60,
+            floorCount: 21,
+            parCount: 3,
+            bundleSize: 10,
+            parCountsBundles: false
+        )
+        XCTAssertEqual(summary.requiredPieces, 63)
+        XCTAssertEqual(summary.requiredBundles, 7)
+        XCTAssertEqual(summary.differencePieces, -3)
+        XCTAssertEqual(summary.differenceBundles, -1)
     }
 
     func test_noParSummary_usesReceivedPiecesAsDistributionTruth() {
@@ -273,17 +334,18 @@ final class CalculatorTests: XCTestCase {
     }
 
     func test_aliiDistribution_14Floors() {
-        // simple sanity: 14 floors, par 3, received 42 = exact, 3 per floor
+        // 14 floors, par 3 bundles/floor, bundle size 5 → 210 required pieces
         let summary = LinenCalculatorService.calculateSummary(
             itemName: "King Sheet",
-            receivedPieces: 42,
+            receivedPieces: 210,
             floorCount: 14,
             parCount: 3,
             bundleSize: 5
         )
-        XCTAssertEqual(summary.requiredPieces, 42)
+        XCTAssertEqual(summary.requiredBundles, 42)
+        XCTAssertEqual(summary.requiredPieces, 210)
         XCTAssertEqual(summary.status, .exact)
-        XCTAssertEqual(summary.basePerFloorPieces, 3)
+        XCTAssertEqual(summary.basePerFloorPieces, 15)
         XCTAssertEqual(summary.remainderPieces, 0)
     }
 
@@ -298,6 +360,7 @@ final class CalculatorTests: XCTestCase {
             bundleSize: 5
         )
         XCTAssertEqual(summary.requiredPieces, 0)
+        XCTAssertEqual(summary.requiredBundles, 0)
         XCTAssertEqual(summary.basePerFloorPieces, 0)
         XCTAssertEqual(summary.remainderPieces, 0)
         XCTAssertEqual(summary.exactPerFloorPieces, 0)
@@ -320,8 +383,10 @@ final class CalculatorTests: XCTestCase {
         )
         XCTAssertEqual(summary.fullBundles, 0)
         XCTAssertEqual(summary.loosePieces, 0)
-        XCTAssertEqual(summary.requiredPieces, 294)
-        XCTAssertEqual(summary.differencePieces, -294)
+        XCTAssertEqual(summary.requiredBundles, 294)
+        XCTAssertEqual(summary.requiredPieces, 1470)
+        XCTAssertEqual(summary.differencePieces, -1470)
+        XCTAssertEqual(summary.differenceBundles, -294)
         XCTAssertEqual(summary.status, .shortage)
         XCTAssertEqual(summary.basePerFloorPieces, 0)
         XCTAssertEqual(summary.remainderPieces, 0)
@@ -334,7 +399,13 @@ final class CalculatorTests: XCTestCase {
             ReceivingEntry(itemName: "Bath Towel", countMethod: .fixedBin, binCount: 2, piecesPerBin: 245, calculatedPieces: 490, calculatedFullBundles: 98, loosePieces: 0)
         ]
         let summaries = [
-            LinenCalculatorService.calculateSummary(itemName: "Bath Towel", receivedPieces: 490, floorCount: 21, parCount: 14, bundleSize: 5)
+            LinenCalculatorService.calculateSummary(
+                itemName: "Bath Towel",
+                receivedPieces: 490,
+                floorCount: 21,
+                parCount: 14,
+                bundleSize: 5
+            )
         ]
         let distribution = LinenCalculatorService.calculateFloorDistribution(receivedPieces: 490, floorCount: 21, itemName: "Bath Towel")
 
@@ -350,7 +421,7 @@ final class CalculatorTests: XCTestCase {
 
         XCTAssertEqual(log.entriesSnapshot.count, 1)
         XCTAssertEqual(log.entriesSnapshot.first?.calculatedPieces, 490)
-        XCTAssertEqual(log.summarySnapshot.first?.differencePieces, 196)
+        XCTAssertEqual(log.summarySnapshot.first?.differencePieces, -980)
         XCTAssertEqual(log.distributionSnapshot.count, 21)
         XCTAssertEqual(log.distributionSnapshot[0].suggestedPieces, 24)
         XCTAssertEqual(log.distributionSnapshot[20].suggestedPieces, 23)

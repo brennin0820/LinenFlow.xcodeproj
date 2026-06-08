@@ -8,15 +8,6 @@ struct ShiftTabView: View {
     @State private var now = Date.now
     @State private var isTimingExpanded = false
 
-    @State private var isTodayPlanExpanded = true
-    @State private var isCountdownExpanded = true
-    @State private var isCommuteExpanded = false
-    @State private var isAlarmsExpanded = false
-    @State private var isLeavingChecklistExpanded = false
-    @State private var isWeeklyScheduleExpanded = false
-    @State private var isWazeExpanded = false
-    @State private var isTranscriptExpanded = false
-
     var body: some View {
         NavigationStack {
             AppBackground {
@@ -26,82 +17,21 @@ struct ShiftTabView: View {
                             shiftHeaderCard
                             timingCard
 
-                            collapsibleSection(
-                                "Today's Shift Plan",
-                                systemImage: "calendar.badge.clock",
-                                tint: .blue,
-                                isExpanded: $isTodayPlanExpanded
-                            ) {
-                                TodayShiftPlanCard(
-                                    viewModel: plannerViewModel,
-                                    onOpenWaze: { plannerViewModel.openWaze() }
-                                )
-                            }
+                            TodayShiftPlanCard(
+                                viewModel: plannerViewModel,
+                                onOpenWaze: { plannerViewModel.openWaze() }
+                            )
 
                             if plannerViewModel.isTodayWorkday, let plan = plannerViewModel.todayPlan {
-                                collapsibleSection(
-                                    "Shift Countdown",
-                                    systemImage: "timer",
-                                    tint: .orange,
-                                    isExpanded: $isCountdownExpanded
-                                ) {
-                                    ShiftEventCountdownCard(plan: plan)
-                                }
+                                ShiftEventCountdownCard(plan: plan)
                             }
 
-                            collapsibleSection(
-                                "Commute",
-                                systemImage: "car.fill",
-                                tint: .green,
-                                isExpanded: $isCommuteExpanded
-                            ) {
-                                CommutePlanCard(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Alarms",
-                                systemImage: "alarm.fill",
-                                tint: .red,
-                                isExpanded: $isAlarmsExpanded
-                            ) {
-                                AlarmBuilderCard(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Leaving Checklist",
-                                systemImage: "checklist",
-                                tint: .mint,
-                                isExpanded: $isLeavingChecklistExpanded
-                            ) {
-                                LeavingChecklistCard(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Weekly Schedule",
-                                systemImage: "calendar",
-                                tint: .indigo,
-                                isExpanded: $isWeeklyScheduleExpanded
-                            ) {
-                                WeeklyScheduleEditorView(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Route Settings",
-                                systemImage: "map.fill",
-                                tint: .cyan,
-                                isExpanded: $isWazeExpanded
-                            ) {
-                                WazeRouteSettingsCard(viewModel: plannerViewModel)
-                            }
-
-                            collapsibleSection(
-                                "Schedule Notes",
-                                systemImage: "note.text",
-                                tint: .yellow,
-                                isExpanded: $isTranscriptExpanded
-                            ) {
-                                ScheduleTranscriptCard(viewModel: plannerViewModel)
-                            }
+                            CommutePlanCard(viewModel: plannerViewModel)
+                            AlarmBuilderCard(viewModel: plannerViewModel)
+                            LeavingChecklistCard(viewModel: plannerViewModel)
+                            WeeklyScheduleEditorView(viewModel: plannerViewModel)
+                            WazeRouteSettingsCard(viewModel: plannerViewModel)
+                            ScheduleTranscriptCard(viewModel: plannerViewModel)
 
                             Spacer(minLength: 24)
                         }
@@ -471,56 +401,5 @@ struct ShiftTabView: View {
         let components = Calendar.current.dateComponents([.hour, .minute], from: adjusted)
         shiftSettings.targetHour = components.hour ?? shiftSettings.targetHour
         shiftSettings.targetMinute = components.minute ?? shiftSettings.targetMinute
-    }
-
-    // MARK: - Collapsible Sections
-
-    @ViewBuilder
-    private func collapsibleSection<Content: View>(
-        _ title: String,
-        systemImage: String,
-        tint: Color,
-        isExpanded: Binding<Bool>,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(spacing: 8) {
-            Button {
-                withAnimation(.snappy(duration: 0.22)) {
-                    isExpanded.wrappedValue.toggle()
-                }
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: systemImage)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(tint)
-                        .frame(width: 28, height: 28)
-                        .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                    Text(title)
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white)
-                    Spacer()
-                    Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.5))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(tint.opacity(0.18), lineWidth: 1)
-                )
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(title)
-            .accessibilityHint(isExpanded.wrappedValue ? "Double tap to collapse." : "Double tap to expand.")
-
-            if isExpanded.wrappedValue {
-                content()
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-        .animation(.snappy(duration: 0.22), value: isExpanded.wrappedValue)
     }
 }

@@ -27,18 +27,20 @@ struct TowerPickerEnvironmentView: View {
         isExpanded && focusTower == nil && !mappedTowers.isEmpty
     }
 
-    private var showsLiveMap: Bool {
-        isExpanded
-    }
-
     var body: some View {
         Group {
             if mappedTowers.isEmpty {
                 fallbackImagery
-            } else if showsLiveMap {
-                liveSceneMap
             } else {
-                staticMapPreview
+                PropertySceneMapView(
+                    mappedTowers: mappedTowers,
+                    focusTowerID: focusTower?.id,
+                    selectedTowerID: selectedTower?.id,
+                    isExpanded: isExpanded,
+                    isInteractive: isExpanded,
+                    shouldOrbit: shouldOrbit,
+                    onTowerSelected: nil
+                )
             }
         }
         .frame(maxWidth: .infinity)
@@ -64,38 +66,6 @@ struct TowerPickerEnvironmentView: View {
         .animation(.easeInOut(duration: 0.45), value: mapHeight)
     }
 
-    private var liveSceneMap: some View {
-        PropertySceneMapView(
-            mappedTowers: mappedTowers,
-            focusTowerID: focusTower?.id,
-            selectedTowerID: selectedTower?.id,
-            isExpanded: isExpanded,
-            isInteractive: isExpanded,
-            shouldOrbit: shouldOrbit,
-            onTowerSelected: nil
-        )
-    }
-
-    private var staticMapPreview: some View {
-        Image("property_overview")
-            .resizable()
-            .scaledToFill()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipped()
-            .overlay(alignment: .bottomLeading) {
-                if let focusTower {
-                    Text(focusTower.name)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.black.opacity(0.48), in: Capsule())
-                        .padding(10)
-                }
-            }
-            .accessibilityLabel(focusTower?.name ?? "Property overview")
-    }
-
     private var fallbackImagery: some View {
         Image("property_overview")
             .resizable()
@@ -112,7 +82,7 @@ struct TowerPickerEnvironmentView: View {
                 .fill(Color.green)
                 .frame(width: 6, height: 6)
                 .shadow(color: .green.opacity(0.8), radius: 4)
-            Text(focusTower?.name ?? "Waikiki 3D")
+            Text(focusTower?.name ?? "Waikiki Map")
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(.white)
             if let hint, focusTower == nil {

@@ -569,7 +569,11 @@ struct ShiftCommandCenterView: View {
 
     private var rebalanceSuggestions: [RebalanceSuggestion] {
         guard allowsStrategyPlanning else { return [] }
-        return rebalanceEngine.suggestions(summaries: viewModel.calculationSummaries, deliveryRows: viewModel.deliveryFloorDistributions)
+        return rebalanceEngine.suggestions(
+            summaries: viewModel.calculationSummaries,
+            deliveryRows: viewModel.deliveryFloorDistributions,
+            deliveryUnitIsBundles: viewModel.deliveryUnitIsBundles
+        )
     }
 
     private var nextActionText: String {

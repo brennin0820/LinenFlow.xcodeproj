@@ -128,6 +128,7 @@ enum DefaultData {
         .init(name: "Alii",    floorCount: 14, identityColorHex: "#7B3F98", deliveryMode: .bundles, allowsDoubleItems: true,  startFloor: 1,  topFloor: 14, skip13thFloor: false),
         .init(name: "Tapa",    floorCount: 33, identityColorHex: "#B66A35", deliveryMode: .bundles, allowsDoubleItems: false, startFloor: 3,  topFloor: 35, skip13thFloor: false),
         .init(name: "Rainbow", floorCount: 31, identityColorHex: "#F05A7E", deliveryMode: .bundles, allowsDoubleItems: false, startFloor: 2,  topFloor: 31, skip13thFloor: true),
+        .init(name: "Kalia",   floorCount: 26, identityColorHex: "#7BAE7F", deliveryMode: .bundles, allowsDoubleItems: false, startFloor: 5,  topFloor: 31, skip13thFloor: true),
     ]
 
     static let linenItems: [LinenItemDefault] = [

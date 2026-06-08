@@ -126,6 +126,33 @@ final class OperationalPlanningTests: XCTestCase {
         XCTAssertEqual(plan.trips.first?.secondaryItemName, "Hand Towel")
     }
 
+    func test_deliveryPaceEngine_remainingBundlesUsesDeliverableNotFullSurplus() {
+        let summaries = [
+            summary(
+                "Twin Cover",
+                fullBundles: 80,
+                receivedPieces: 400,
+                maxAllowedBundles: 60,
+                deliverableBundles: 60,
+                leftoverBundles: 20
+            )
+        ]
+
+        let session = DeliveryPaceEngine().makeSession(
+            tower: nil,
+            summaries: summaries,
+            deliveryRows: [],
+            completedFloors: [],
+            now: Date(timeIntervalSince1970: 1_000),
+            shiftStartTime: Date(timeIntervalSince1970: 900),
+            targetDownTime: Date(timeIntervalSince1970: 2_000),
+            expectedShiftEndTime: Date(timeIntervalSince1970: 3_000),
+            deliveryStartedAt: Date(timeIntervalSince1970: 900)
+        )
+
+        XCTAssertEqual(session.remainingBundles, 60)
+    }
+
     func test_deliveryPaceEngine_marksBehindWhenEstimatedFinishMissesTarget() {
         let now = Date(timeIntervalSince1970: 1_000)
         let target = now.addingTimeInterval(10 * 60)
@@ -163,6 +190,40 @@ final class OperationalPlanningTests: XCTestCase {
         XCTAssertEqual(suggestions.first?.donorFloors, [1, 2])
         XCTAssertEqual(suggestions.first?.piecesRecovered, 2)
         XCTAssertEqual(suggestions.first?.isRecoverable, true)
+    }
+
+    func test_smartRebalanceEngine_bundleModeUsesSuggestedBundles() {
+        let summaries = [
+            summary(
+                "Twin Sheet",
+                fullBundles: 8,
+                receivedPieces: 40,
+                differencePieces: -260,
+                status: .shortage,
+                basePerFloorPieces: 2,
+                maxAllowedBundles: 60,
+                deliverableBundles: 8,
+                shortageBundles: 52
+            )
+        ]
+        let rows = (1...15).map { floor in
+            FloorDistributionRow(
+                floorNumber: floor,
+                itemName: "Twin Sheet",
+                suggestedPieces: 0,
+                suggestedBundles: floor <= 8 ? 1 : 0
+            )
+        }
+
+        let suggestions = SmartRebalanceEngine().suggestions(
+            summaries: summaries,
+            deliveryRows: rows,
+            deliveryUnitIsBundles: true
+        )
+
+        XCTAssertEqual(suggestions.count, 1)
+        XCTAssertEqual(suggestions.first?.donorFloors, Array(1...8))
+        XCTAssertTrue(suggestions.first?.isRecoverable == false)
     }
 
     func test_elevatorTripPlanner_usesPhysicalBinCountForLoadEstimation() {
@@ -214,7 +275,11 @@ final class OperationalPlanningTests: XCTestCase {
         loosePieces: Int = 0,
         differencePieces: Int = 0,
         status: CalculationStatus = .exact,
-        basePerFloorPieces: Int = 1
+        basePerFloorPieces: Int = 1,
+        maxAllowedBundles: Int = 0,
+        deliverableBundles: Int? = nil,
+        shortageBundles: Int = 0,
+        leftoverBundles: Int = 0
     ) -> CalculationSummary {
         CalculationSummary(
             itemName: itemName,
@@ -223,7 +288,10 @@ final class OperationalPlanningTests: XCTestCase {
             fullBundles: fullBundles,
             loosePieces: loosePieces,
             requiredPieces: receivedPieces - differencePieces,
-            deliverableBundles: fullBundles,
+            maxAllowedBundles: maxAllowedBundles,
+            deliverableBundles: deliverableBundles ?? fullBundles,
+            shortageBundles: shortageBundles,
+            leftoverBundles: leftoverBundles,
             differencePieces: differencePieces,
             status: status,
             exactPerFloorPieces: Double(basePerFloorPieces),

@@ -12,7 +12,7 @@ final class AlgorithmTests: XCTestCase {
 
     func test_aggregation_singleEntry() {
         let entries = [
-            ReceivingEntry(itemName: "King Sheet", countMethod: .manualPieces, calculatedPieces: 50)
+            ReceivingEntry(itemName: "King Sheet", countMethod: .manualPieces, manualPieces: 50, calculatedPieces: 50)
         ]
         let result = ReceivingAggregationAlgorithm.aggregate(entries)
         XCTAssertEqual(result.count, 1)
@@ -23,8 +23,8 @@ final class AlgorithmTests: XCTestCase {
 
     func test_aggregation_twoEntriesSameItem_sumsPieces() {
         let entries = [
-            ReceivingEntry(itemName: "Double Sheet", countMethod: .cartLabelPieces, calculatedPieces: 39),
-            ReceivingEntry(itemName: "Double Sheet", countMethod: .cartLabelPieces, calculatedPieces: 50),
+            ReceivingEntry(itemName: "Double Sheet", countMethod: .cartLabelPieces, manualPieces: 39, calculatedPieces: 39),
+            ReceivingEntry(itemName: "Double Sheet", countMethod: .cartLabelPieces, manualPieces: 50, calculatedPieces: 50),
         ]
         let result = ReceivingAggregationAlgorithm.aggregate(entries)
         XCTAssertEqual(result.count, 1)
@@ -35,9 +35,9 @@ final class AlgorithmTests: XCTestCase {
 
     func test_aggregation_mixedItems_twoGroups() {
         let entries = [
-            ReceivingEntry(itemName: "Double Sheet", countMethod: .cartLabelPieces, calculatedPieces: 39),
-            ReceivingEntry(itemName: "King Sheet",   countMethod: .cartLabelPieces, calculatedPieces: 50),
-            ReceivingEntry(itemName: "Double Sheet", countMethod: .cartLabelPieces, calculatedPieces: 50),
+            ReceivingEntry(itemName: "Double Sheet", countMethod: .cartLabelPieces, manualPieces: 39, calculatedPieces: 39),
+            ReceivingEntry(itemName: "King Sheet",   countMethod: .cartLabelPieces, manualPieces: 50, calculatedPieces: 50),
+            ReceivingEntry(itemName: "Double Sheet", countMethod: .cartLabelPieces, manualPieces: 50, calculatedPieces: 50),
         ]
         let result = ReceivingAggregationAlgorithm.aggregate(entries)
         XCTAssertEqual(result.count, 2)
@@ -52,8 +52,8 @@ final class AlgorithmTests: XCTestCase {
     func test_aggregation_aliasResolvedToCanonical() {
         // "Double Duvet" is an alias for "Double Cover"
         let entries = [
-            ReceivingEntry(itemName: "Double Duvet", countMethod: .cartLabelPieces, calculatedPieces: 51),
-            ReceivingEntry(itemName: "Double Cover", countMethod: .cartLabelPieces, calculatedPieces: 65),
+            ReceivingEntry(itemName: "Double Duvet", countMethod: .cartLabelPieces, manualPieces: 51, calculatedPieces: 51),
+            ReceivingEntry(itemName: "Double Cover", countMethod: .cartLabelPieces, manualPieces: 65, calculatedPieces: 65),
         ]
         let result = ReceivingAggregationAlgorithm.aggregate(entries)
         XCTAssertEqual(result.count, 1)
@@ -64,8 +64,8 @@ final class AlgorithmTests: XCTestCase {
 
     func test_aggregation_emptyNameIgnored() {
         let entries = [
-            ReceivingEntry(itemName: "",           countMethod: .manualPieces, calculatedPieces: 99),
-            ReceivingEntry(itemName: "Bath Towel", countMethod: .manualPieces, calculatedPieces: 490),
+            ReceivingEntry(itemName: "",           countMethod: .manualPieces, manualPieces: 99, calculatedPieces: 99),
+            ReceivingEntry(itemName: "Bath Towel", countMethod: .manualPieces, manualPieces: 490, calculatedPieces: 490),
         ]
         let result = ReceivingAggregationAlgorithm.aggregate(entries)
         XCTAssertEqual(result.count, 1)
@@ -74,9 +74,9 @@ final class AlgorithmTests: XCTestCase {
 
     func test_aggregation_sortedAlphabetically() {
         let entries = [
-            ReceivingEntry(itemName: "Washcloth",  countMethod: .manualPieces, calculatedPieces: 100),
-            ReceivingEntry(itemName: "Bath Towel", countMethod: .manualPieces, calculatedPieces: 490),
-            ReceivingEntry(itemName: "Hand Towel", countMethod: .manualPieces, calculatedPieces: 100),
+            ReceivingEntry(itemName: "Washcloth",  countMethod: .manualPieces, manualPieces: 100, calculatedPieces: 100),
+            ReceivingEntry(itemName: "Bath Towel", countMethod: .manualPieces, manualPieces: 490, calculatedPieces: 490),
+            ReceivingEntry(itemName: "Hand Towel", countMethod: .manualPieces, manualPieces: 100, calculatedPieces: 100),
         ]
         let result = ReceivingAggregationAlgorithm.aggregate(entries)
         XCTAssertEqual(result.map(\.itemName), ["Bath Towel", "Hand Towel", "Washcloth"])
@@ -86,12 +86,12 @@ final class AlgorithmTests: XCTestCase {
 
     func test_aggregation_diamondALSCO_sixRows_fourItems() {
         let entries = [
-            ReceivingEntry(itemName: "Double Duvet",            countMethod: .cartLabelPieces, calculatedPieces: 51),  // → DC
-            ReceivingEntry(itemName: "Double Sheet",            countMethod: .cartLabelPieces, calculatedPieces: 39),  // → DS
-            ReceivingEntry(itemName: "King Sheet",              countMethod: .cartLabelPieces, calculatedPieces: 50),  // → KS
-            ReceivingEntry(itemName: "King Duvet / King Cover", countMethod: .cartLabelPieces, calculatedPieces: 50),  // → KC
-            ReceivingEntry(itemName: "Double Sheet",            countMethod: .cartLabelPieces, calculatedPieces: 50),  // → DS
-            ReceivingEntry(itemName: "Double Duvet",            countMethod: .cartLabelPieces, calculatedPieces: 65),  // → DC
+            ReceivingEntry(itemName: "Double Duvet",            countMethod: .cartLabelPieces, manualPieces: 51, calculatedPieces: 51),  // → DC
+            ReceivingEntry(itemName: "Double Sheet",            countMethod: .cartLabelPieces, manualPieces: 39, calculatedPieces: 39),  // → DS
+            ReceivingEntry(itemName: "King Sheet",              countMethod: .cartLabelPieces, manualPieces: 50, calculatedPieces: 50),  // → KS
+            ReceivingEntry(itemName: "King Duvet / King Cover", countMethod: .cartLabelPieces, manualPieces: 50, calculatedPieces: 50),  // → KC
+            ReceivingEntry(itemName: "Double Sheet",            countMethod: .cartLabelPieces, manualPieces: 50, calculatedPieces: 50),  // → DS
+            ReceivingEntry(itemName: "Double Duvet",            countMethod: .cartLabelPieces, manualPieces: 65, calculatedPieces: 65),  // → DC
         ]
         let result = ReceivingAggregationAlgorithm.aggregate(entries)
         XCTAssertEqual(result.count, 4, "Should collapse 6 rows to 4 canonical items")
@@ -345,11 +345,42 @@ final class AlgorithmTests: XCTestCase {
 
     func test_aggregation_zeroCalculatedPieces_stillAggregates() {
         let entries = [
-            ReceivingEntry(itemName: "Bath Towel", countMethod: .manualPieces, calculatedPieces: 0)
+            ReceivingEntry(itemName: "Bath Towel", countMethod: .manualPieces, manualPieces: 0, calculatedPieces: 0)
         ]
         let result = ReceivingAggregationAlgorithm.aggregate(entries)
         XCTAssertEqual(result.count, 1)
         XCTAssertEqual(result[0].totalPieces, 0)
+    }
+
+    func test_aggregation_legacySnapshotFallsBackToCalculatedPieces() {
+        let entries = [
+            ReceivingEntry(itemName: "King Sheet", countMethod: .manualPieces, calculatedPieces: 50)
+        ]
+        let result = ReceivingAggregationAlgorithm.aggregate(entries)
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].totalPieces, 50)
+    }
+
+    func test_aggregation_recomputesPiecesFromCountMethod_notStaleCalculatedPieces() {
+        let entries = [
+            ReceivingEntry(
+                itemName: "Bath Towel",
+                countMethod: .fixedBin,
+                binCount: 2,
+                piecesPerBin: 245,
+                calculatedPieces: 999
+            ),
+            ReceivingEntry(
+                itemName: "Bath Towel",
+                countMethod: .manualPieces,
+                manualPieces: 50,
+                calculatedPieces: 1
+            ),
+        ]
+        let result = ReceivingAggregationAlgorithm.aggregate(entries)
+        XCTAssertEqual(result.count, 1)
+        XCTAssertEqual(result[0].totalPieces, 540, "Should sum 490 + 50 from count method, ignoring stale calculatedPieces")
+        XCTAssertEqual(result[0].sourceEntryCount, 2)
     }
 
     func test_progress_completedCount_correctForAnySet() {

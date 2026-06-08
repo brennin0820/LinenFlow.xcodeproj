@@ -27,18 +27,20 @@ struct TowerParRequirement: Identifiable, Hashable {
     let requiredPieces: Int
     let requiredBundles: Int
     let receivedPieces: Int
+    let receivedFullBundles: Int
+    let summaryDifferencePieces: Int?
+    let summaryDifferenceBundles: Int?
 
     var receivedBundles: Int {
-        guard bundleSize > 0 else { return 0 }
-        return receivedPieces / bundleSize
+        receivedFullBundles
     }
 
     var pieceGap: Int {
-        receivedPieces - requiredPieces
+        summaryDifferencePieces ?? (receivedPieces - requiredPieces)
     }
 
     var bundleGap: Int {
-        receivedBundles - requiredBundles
+        summaryDifferenceBundles ?? (receivedBundles - requiredBundles)
     }
 }
 
@@ -68,6 +70,9 @@ final class FlowViewModel {
     private(set) var bundleFloorDistributions: [FloorDistributionRow] = []
     var notes: String = ""
     private(set) var validationWarnings: [String] = []
+    private(set) var supplyPredictions: [ItemSupplyPrediction] = []
+    private(set) var supplyAnomalies: [SupplyAnomaly] = []
+    private let shiftIntelligence = ShiftIntelligenceService()
     private(set) var isDemoDay: Bool = false
     private(set) var saveError: String?
     private(set) var currentDeliveryItemName: String?
@@ -240,8 +245,23 @@ final class FlowViewModel {
             .filter { itemIsAvailable($0, for: tower) }
             .map { item in
                 let bundleSize = max(item.bundleSize, 1)
-                let requiredPieces = max(0, floorCount * item.parCount)
-                let requiredBundles = Int(ceil(Double(requiredPieces) / Double(bundleSize)))
+                let parCountsBundles = tower.deliveryMode != .pieces
+                let requiredBundles: Int
+                let requiredPieces: Int
+                if parCountsBundles {
+                    requiredBundles = LinenCalculatorService.calculateRequiredBundles(
+                        floorCount: floorCount,
+                        parCount: max(0, item.parCount)
+                    )
+                    requiredPieces = requiredBundles * bundleSize
+                } else {
+                    requiredPieces = max(0, floorCount * item.parCount)
+                    requiredBundles = LinenCalculatorService.calculateRequiredBundlesFromPieces(
+                        requiredPieces: requiredPieces,
+                        bundleSize: bundleSize
+                    )
+                }
+                let summary = summariesByName[item.name]
                 return TowerParRequirement(
                     id: item.id,
                     itemName: item.name,
@@ -250,7 +270,10 @@ final class FlowViewModel {
                     bundleSize: bundleSize,
                     requiredPieces: requiredPieces,
                     requiredBundles: requiredBundles,
-                    receivedPieces: summariesByName[item.name]?.receivedPieces ?? 0
+                    receivedPieces: summary?.receivedPieces ?? 0,
+                    receivedFullBundles: summary?.fullBundles ?? 0,
+                    summaryDifferencePieces: summary?.differencePieces,
+                    summaryDifferenceBundles: summary?.differenceBundles
                 )
             }
             .sorted { lhs, rhs in
@@ -968,7 +991,8 @@ final class FlowViewModel {
                     receivedPieces: totalPieces,
                     floorCount: deliveryFloorCount,
                     parCount: item.parCount,
-                    bundleSize: item.bundleSize
+                    bundleSize: item.bundleSize,
+                    parCountsBundles: tower.deliveryMode != .pieces
                 )
                 : LinenCalculatorService.calculateNoParSummary(
                     itemName: itemName,
@@ -1093,7 +1117,69 @@ final class FlowViewModel {
             }
         }
 
+        supplyAnomalies = shiftIntelligence.anomalies(
+            entries: receivingEntries,
+            predictions: supplyPredictions
+        )
+        for anomaly in supplyAnomalies {
+            warnings.append(anomaly.message)
+        }
+
         validationWarnings = warnings
+    }
+
+    // MARK: - Shift intelligence
+
+    func updateShiftIntelligence(from logs: [DailyLog]) {
+        guard let tower = selectedTower else {
+            supplyPredictions = []
+            supplyAnomalies = []
+            return
+        }
+        let towerItems = availableItems.filter { itemIsAvailable($0, for: tower) }
+        supplyPredictions = shiftIntelligence.predictions(
+            towerName: tower.name,
+            items: towerItems,
+            logs: logs
+        )
+        supplyAnomalies = shiftIntelligence.anomalies(
+            entries: receivingEntries,
+            predictions: supplyPredictions
+        )
+    }
+
+    var smartFillItemCount: Int {
+        supplyPredictions.filter(\.hasValue).count
+    }
+
+    var smartFillSummary: String? {
+        guard smartFillItemCount > 0 else { return nil }
+        let label = supplyPredictions.first?.typicalLabel ?? "Historical average"
+        return "\(label) · \(smartFillItemCount) items"
+    }
+
+    @discardableResult
+    func applySmartFill() -> Int {
+        guard selectedTower != nil else { return 0 }
+        let itemByName = Dictionary(uniqueKeysWithValues: availableItems.map { ($0.name, $0) })
+        var applied = 0
+        for prediction in supplyPredictions where prediction.hasValue {
+            guard let item = itemByName[prediction.itemName],
+                  itemIsAvailable(item, for: selectedTower!) else { continue }
+            switch item.countMethod {
+            case .fixedBin:
+                if let bins = prediction.predictedBins {
+                    addOrUpdateReceivingEntry(item: item, binCount: bins, notes: "Smart fill")
+                    applied += 1
+                }
+            case .manualPieces, .cartLabelPieces:
+                if let pieces = prediction.predictedPieces {
+                    addOrUpdateReceivedPieces(item: item, pieces: pieces)
+                    applied += 1
+                }
+            }
+        }
+        return applied
     }
 
     // MARK: - Flow control
@@ -1108,6 +1194,7 @@ final class FlowViewModel {
         deliverySessionState = DeliverySessionState()
         notes = ""
         isDemoDay = false
+        supplyAnomalies = []
         LiveActivityManager.endDeliveryActivity(state: deliverySessionState)
         recalculate()
     }

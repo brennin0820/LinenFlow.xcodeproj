@@ -64,6 +64,7 @@ struct ResultsView: View {
                                 ResultCard(
                                     summary: summary,
                                     usesParSystem: viewModel.usesParSystem,
+                                    deliveryUnitIsBundles: viewModel.deliveryUnitIsBundles,
                                     isPinned: isPinned,
                                     canPin: pinnedCount < 3 || isPinned,
                                     isExpanded: expandedResultItemName == summary.itemName,
@@ -800,6 +801,7 @@ private struct ShortageWarningCard: View {
 private struct ResultCard: View {
     let summary: CalculationSummary
     let usesParSystem: Bool
+    let deliveryUnitIsBundles: Bool
     let isPinned: Bool
     let canPin: Bool
     let isExpanded: Bool
@@ -901,13 +903,17 @@ private struct ResultCard: View {
                     )
                     MetricTile(
                         label: "Difference", value: differenceString, secondary: differenceSecondary, tint: accent,
-                        explanation: "\(summary.receivedPieces) received − \(summary.requiredPieces) required = \(summary.differencePieces) pcs"
+                        explanation: deliveryUnitIsBundles
+                            ? "\(summary.fullBundles) on hand − \(summary.requiredBundles ?? 0) required = \(summary.differenceBundles) bundles (\(summary.differencePieces) pcs)"
+                            : "\(summary.receivedPieces) received − \(summary.requiredPieces) required = \(summary.differencePieces) pcs"
                     )
                 }
                 HStack(spacing: 10) {
                     MetricTile(
                         label: "Max Allowed", value: "\(summary.maxAllowedBundles)", secondary: "bundles",
-                        explanation: "⌈\(summary.requiredPieces) pcs ÷ \(summary.bundleSize) pcs/bundle⌉"
+                        explanation: deliveryUnitIsBundles
+                            ? "\(summary.requiredBundles ?? summary.maxAllowedBundles) bundles par (\(summary.maxAllowedBundles) max deliverable)"
+                            : "⌈\(summary.requiredPieces) pcs ÷ \(summary.bundleSize) pcs/bundle⌉"
                     )
                     MetricTile(
                         label: "Can Deliver", value: "\(summary.deliverableBundles)", secondary: "bundles", tint: .green,
@@ -1053,10 +1059,21 @@ private struct ResultCard: View {
     }
 
     private var differenceString: String {
-        summary.differencePieces > 0 ? "+\(summary.differencePieces)" : "\(summary.differencePieces)"
+        if deliveryUnitIsBundles {
+            let bundles = summary.differenceBundles
+            return bundles > 0 ? "+\(bundles)" : "\(bundles)"
+        }
+        return summary.differencePieces > 0 ? "+\(summary.differencePieces)" : "\(summary.differencePieces)"
     }
 
     private var differenceSecondary: String {
+        if deliveryUnitIsBundles {
+            switch summary.status {
+            case .shortage: return "short \(summary.shortageBundles) bdl"
+            case .overage:  return "leftover \(summary.leftoverBundles) bdl"
+            case .exact:    return "exact match"
+            }
+        }
         switch summary.status {
         case .shortage: return "short \(abs(summary.differencePieces)) pcs"
         case .overage:  return "enough +\(summary.differencePieces) pcs"

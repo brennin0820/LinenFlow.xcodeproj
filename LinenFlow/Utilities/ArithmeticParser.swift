@@ -5,9 +5,56 @@ enum ArithmeticError: Error, Equatable, Sendable {
     case invalidCharacter(Character)
     case partial
     case mismatchedParens
+    case multipleDotMultipliers
+    case multipleGroupedExpressions
     case divisionByZero
     case negativeNotAllowed
     case fractionalNotAllowed
+}
+
+/// Guards live expression entry (keypad + paste filtering).
+enum ArithmeticInputRules {
+    private static let binaryOperators: Set<Character> = ["+", "-", "*", "/", ".", "×", "÷"]
+
+    static func filter(_ input: String, previous: String) -> String {
+        guard input != previous else { return input }
+
+        if input.filter({ $0 == "." }).count > 1 {
+            return previous
+        }
+
+        if input.count > previous.count, input.hasPrefix(previous) {
+            let appended = String(input.dropFirst(previous.count))
+            if !canAppend(appended, to: previous) {
+                return previous
+            }
+        }
+
+        return input
+    }
+
+    static func canAppend(_ token: String, to expression: String) -> Bool {
+        guard !token.isEmpty else { return false }
+        if token == ".", expression.contains(".") { return false }
+
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return true }
+
+        if needsOperatorBeforeNextTerm(trimmed) {
+            if token == "(" || token == "." || token.first?.isNumber == true {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    private static func needsOperatorBeforeNextTerm(_ trimmed: String) -> Bool {
+        guard let last = trimmed.last else { return false }
+        if last == ")" { return true }
+        if last.isNumber { return true }
+        return false
+    }
 }
 
 enum ArithmeticParser {
@@ -21,6 +68,10 @@ enum ArithmeticParser {
         let trimmed = input.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return .failure(.empty) }
 
+        if trimmed.filter({ $0 == "." }).count > 1 {
+            return .failure(.multipleDotMultipliers)
+        }
+
         let tokens: [Token]
         switch tokenize(trimmed) {
         case .failure(let err): return .failure(err)
@@ -29,15 +80,45 @@ enum ArithmeticParser {
             tokens = t
         }
 
+        if isTrailingBinaryOperator(tokens) {
+            return .failure(.partial)
+        }
+
         let parser = RecursiveDescent(tokens: tokens)
         do {
             let value = try parser.parseExpression()
-            guard parser.isAtEnd else { return .failure(.partial) }
+            guard parser.isAtEnd else {
+                return .failure(classifyUnconsumed(tokens, from: parser.pos))
+            }
             return .success(value)
         } catch let err as ArithmeticError {
             return .failure(err)
         } catch {
             return .failure(.partial)
+        }
+    }
+
+    private static func isTrailingBinaryOperator(_ tokens: [Token]) -> Bool {
+        guard let last = tokens.last else { return false }
+        switch last {
+        case .plus, .minus, .multiply, .divide:
+            return true
+        case .leftParen, .rightParen, .number:
+            return false
+        }
+    }
+
+    private static func classifyUnconsumed(_ tokens: [Token], from pos: Int) -> ArithmeticError {
+        let remaining = Array(tokens[pos...])
+        guard let first = remaining.first else { return .partial }
+
+        switch first {
+        case .rightParen:
+            return .mismatchedParens
+        case .leftParen, .number:
+            return .multipleGroupedExpressions
+        case .plus, .minus, .multiply, .divide:
+            return .partial
         }
     }
 
@@ -51,7 +132,6 @@ enum ArithmeticParser {
                 continue
             }
             if c.isNumber {
-                // Consume digit groups separated by commas (e.g. "1,200" → 1200)
                 var s = ""
                 while i < input.endIndex {
                     let ch = input[i]
@@ -59,7 +139,6 @@ enum ArithmeticParser {
                         s.append(ch)
                         i = input.index(after: i)
                     } else if ch == "," {
-                        // Only treat comma as thousands separator if it is followed by exactly 3 digits
                         let next = input.index(after: i)
                         var digitCount = 0
                         var j = next
@@ -67,9 +146,8 @@ enum ArithmeticParser {
                             digitCount += 1
                             j = input.index(after: j)
                         }
-                        // If exactly 3 digits follow (thousands separator pattern), skip comma
                         if digitCount == 3 {
-                            i = input.index(after: i)  // skip comma
+                            i = input.index(after: i)
                         } else {
                             break
                         }

@@ -3,6 +3,7 @@ import SwiftUI
 struct WarningCard: View {
     let warnings: [String]
     @State private var isExpanded = false
+    @Environment(AppThemeSettings.self) private var theme
 
     var body: some View {
         Group {
@@ -53,11 +54,11 @@ struct WarningCard: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
-                .padding(14)
+                .padding(theme.cardPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.yellow.opacity(0.065), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(Color.yellow.opacity(0.065), in: RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous)
                         .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
                 )
             }

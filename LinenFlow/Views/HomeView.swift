@@ -87,14 +87,22 @@ struct HomeView: View {
             .onAppear {
                 viewModel.refreshAvailable()
                 resetDraftSelectedItems()
+                refreshShiftIntelligence()
                 hasAppeared = true
             }
         }
         .onChange(of: viewModel.selectedTower?.id) { oldTowerID, newTowerID in
             resetDraftSelectedItems()
             itemPickerExpanded = false
+            refreshShiftIntelligence()
             guard let newTowerID, oldTowerID == nil else { return }
             finishTowerPickerCollapse()
+        }
+        .onChange(of: logs.count) { _, _ in
+            refreshShiftIntelligence()
+        }
+        .onChange(of: logs.first?.id) { _, _ in
+            refreshShiftIntelligence()
         }
         .onChange(of: deepLinkCoordinator.openDeliveryCommandCenter) { _, shouldOpen in
             guard shouldOpen else { return }
@@ -117,6 +125,7 @@ struct HomeView: View {
             } else {
                 if viewModel.receivingEntries.isEmpty {
                     useLastLogCard
+                    smartFillCard
                 }
                 itemSelectionCard
                 if !viewModel.calculationSummaries.isEmpty {
@@ -162,6 +171,44 @@ struct HomeView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This will remove all entered supply for the current shift. This cannot be undone.")
+        }
+    }
+
+    @ViewBuilder
+    private var smartFillCard: some View {
+        if viewModel.smartFillItemCount > 0, let summary = viewModel.smartFillSummary {
+            SmartFillCard(
+                summary: summary,
+                itemCount: viewModel.smartFillItemCount,
+                confidence: smartFillConfidence,
+                onApply: applySmartFill
+            )
+        }
+    }
+
+    private var smartFillConfidence: PredictionConfidence? {
+        let confidences = viewModel.supplyPredictions.filter(\.hasValue).map(\.confidence)
+        guard !confidences.isEmpty else { return nil }
+        if confidences.contains(.low) { return .low }
+        if confidences.contains(.medium) { return .medium }
+        return .high
+    }
+
+    private func refreshShiftIntelligence() {
+        viewModel.updateShiftIntelligence(from: logs)
+    }
+
+    private func applySmartFill() {
+        savedConfirmation = nil
+        let applied = viewModel.applySmartFill()
+        refreshShiftIntelligence()
+        if applied > 0 {
+            #if canImport(UIKit)
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            #endif
+            savedConfirmation = "Smart fill applied to \(applied) item\(applied == 1 ? "" : "s")."
+        } else {
+            savedConfirmation = "No smart fill values available."
         }
     }
 
@@ -408,38 +455,33 @@ struct HomeView: View {
     private func collapsedTowerPicker(_ tower: Tower) -> some View {
         let color = Color(hex: tower.identityColorHex ?? "") ?? .blue
 
-        return HStack(spacing: 10) {
-            Image("tower_\(tower.name.lowercased())")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 34, height: 44)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        return PremiumCard(accentColor: color) {
+            HStack(spacing: 10) {
+                Image("tower_\(tower.name.lowercased())")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 34, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
 
-            compactActiveFloorControl(tower)
+                compactActiveFloorControl(tower)
 
-            Spacer(minLength: 8)
+                Spacer(minLength: 8)
 
-            Button {
-                withAnimation(.snappy(duration: 0.28)) {
-                    towerPickerExpanded = true
-                    mapFocusTowerID = nil
+                Button {
+                    withAnimation(.snappy(duration: 0.28)) {
+                        towerPickerExpanded = true
+                        mapFocusTowerID = nil
+                    }
+                } label: {
+                    Label("Change", systemImage: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(color.opacity(0.75), in: Capsule())
                 }
-            } label: {
-                Label("Change", systemImage: "chevron.down")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(color.opacity(0.75), in: Capsule())
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke((color).opacity(0.28), lineWidth: 1)
-        )
     }
 
     private var expandedTowerPicker: some View {
@@ -852,6 +894,7 @@ struct HomeView: View {
                 summary: viewModel.calculationSummaries.first { $0.itemName == item.name },
                 distributionRows: viewModel.deliveryFloorDistributions.filter { $0.itemName == item.name },
                 unitIsBundles: viewModel.deliveryUnitIsBundles,
+                hasSupplyAnomaly: viewModel.supplyAnomalies.contains { $0.itemName == item.name },
                 onEditRequested: { beginEditing(item) }
             )
                 .id(listCardID(for: item))
@@ -1137,6 +1180,7 @@ private struct EquatableLinenListCard: View, Equatable {
     let summary: CalculationSummary?
     let distributionRows: [FloorDistributionRow]
     let unitIsBundles: Bool
+    let hasSupplyAnomaly: Bool
     let onEditRequested: () -> Void
 
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -1146,6 +1190,7 @@ private struct EquatableLinenListCard: View, Equatable {
             && lhs.summary?.status == rhs.summary?.status
             && lhs.distributionRows.count == rhs.distributionRows.count
             && lhs.unitIsBundles == rhs.unitIsBundles
+            && lhs.hasSupplyAnomaly == rhs.hasSupplyAnomaly
     }
 
     var body: some View {

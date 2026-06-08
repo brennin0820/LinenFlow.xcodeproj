@@ -166,6 +166,7 @@ struct OneScreenLinenItemCard: View {
                     .minimumScaleFactor(0.78)
             }
             Spacer(minLength: 8)
+            anomalyIndicator
             if let summary {
                 compactStatusIcon(for: summary.status)
             }
@@ -226,6 +227,7 @@ struct OneScreenLinenItemCard: View {
                         .minimumScaleFactor(0.78)
                 }
                 Spacer(minLength: 8)
+                anomalyIndicator
                 tripSelectionPill
                 activeDeliveryPill
                 statusIcon
@@ -250,6 +252,23 @@ struct OneScreenLinenItemCard: View {
     private var statusIcon: some View {
         if let summary {
             compactStatusIcon(for: summary.status)
+        }
+    }
+
+    private var supplyAnomaly: SupplyAnomaly? {
+        viewModel.supplyAnomalies.first { $0.itemName == item.name }
+    }
+
+    @ViewBuilder
+    private var anomalyIndicator: some View {
+        if let anomaly = supplyAnomaly {
+            Image(systemName: anomaly.direction == .unusuallyLow ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.purple)
+                .frame(width: 24, height: 24)
+                .background(Color.purple.opacity(0.16), in: Circle())
+                .overlay(Circle().stroke(Color.purple.opacity(0.22), lineWidth: 1))
+                .accessibilityLabel(anomaly.message)
         }
     }
 

@@ -1,6 +1,5 @@
 import CoreLocation
 import MapKit
-import SceneKit
 import SwiftUI
 
 enum HiltonPropertyMap {
@@ -60,32 +59,5 @@ enum HiltonPropertyMap {
             return (tower, coordinate)
         }
         .sorted { $0.tower.name < $1.tower.name }
-    }
-
-    /// Maps a geographic coordinate to a normalized XZ point on the custom 3D scene plane.
-    /// Scene units span roughly ±6 across the property footprint (~950 m region).
-    static func scenePosition(for coordinate: CLLocationCoordinate2D) -> SCNVector3 {
-        let metersPerLatDegree = 111_320.0
-        let metersPerLonDegree = 111_320.0 * cos(center.latitude * .pi / 180)
-        let deltaLat = coordinate.latitude - center.latitude
-        let deltaLon = coordinate.longitude - center.longitude
-        let eastMeters = deltaLon * metersPerLonDegree
-        let northMeters = deltaLat * metersPerLatDegree
-        let sceneSpanMeters = region.span.latitudeDelta * metersPerLatDegree
-        let scale = 12.0 / sceneSpanMeters
-
-        return SCNVector3(
-            Float(eastMeters * scale),
-            0,
-            Float(-northMeters * scale)
-        )
-    }
-
-    static func scenePositions(
-        from mappedTowers: [(tower: Tower, coordinate: CLLocationCoordinate2D)]
-    ) -> [(tower: Tower, position: SCNVector3)] {
-        mappedTowers.map { entry in
-            (entry.tower, scenePosition(for: entry.coordinate))
-        }
     }
 }

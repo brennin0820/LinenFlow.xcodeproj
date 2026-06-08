@@ -18,7 +18,7 @@ struct ArithmeticKeypadStrip: View {
         Key(id: "/", display: "÷", insert: "/", accessibilityLabel: "Divide"),
         Key(id: "(", display: "(", insert: "(", accessibilityLabel: "Open parenthesis"),
         Key(id: ")", display: ")", insert: ")", accessibilityLabel: "Close parenthesis"),
-        Key(id: ".", display: ".", insert: ".", accessibilityLabel: "Decimal point"),
+        Key(id: ".", display: ".", insert: ".", accessibilityLabel: "Multiply"),
     ]
 
     var body: some View {

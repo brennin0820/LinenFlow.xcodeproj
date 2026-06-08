@@ -6,6 +6,8 @@ struct InsightsView: View {
     @Query(sort: \DailyLog.createdAt, order: .forward) private var logs: [DailyLog]
 
     @State private var selectedTower: String = "All Towers"
+
+    private let shiftIntelligence = ShiftIntelligenceService()
     
     var uniqueTowers: [String] {
         let towers = Set(logs.map { $0.towerName })
@@ -20,6 +22,14 @@ struct InsightsView: View {
         }
     }
 
+    private var towerFilter: String? {
+        selectedTower == "All Towers" ? nil : selectedTower
+    }
+
+    var recommendations: [SupplyRecommendation] {
+        shiftIntelligence.recommendations(logs: logs, towerFilter: towerFilter)
+    }
+
     struct DeliveryData: Identifiable {
         let id = UUID()
         let date: Date
@@ -31,7 +41,8 @@ struct InsightsView: View {
         let id = UUID()
         let date: Date
         let item: String
-        let shortagePieces: Int
+        let shortageAmount: Int
+        let unitLabel: String
     }
 
     var deliveryChartData: [DeliveryData] {
@@ -51,9 +62,22 @@ struct InsightsView: View {
         var data: [ShortageData] = []
         for log in filteredLogs {
             let summaries = log.summarySnapshot
-            for summary in summaries {
-                if summary.differencePieces < 0 {
-                    data.append(ShortageData(date: log.date, item: summary.itemName, shortagePieces: abs(summary.differencePieces)))
+            for summary in summaries where summary.status == .shortage {
+                let usesBundlePar = summary.requiredBundles != nil
+                if usesBundlePar, summary.shortageBundles > 0 {
+                    data.append(ShortageData(
+                        date: log.date,
+                        item: summary.itemName,
+                        shortageAmount: summary.shortageBundles,
+                        unitLabel: "bundles"
+                    ))
+                } else if summary.differencePieces < 0 {
+                    data.append(ShortageData(
+                        date: log.date,
+                        item: summary.itemName,
+                        shortageAmount: abs(summary.differencePieces),
+                        unitLabel: "pieces"
+                    ))
                 }
             }
         }
@@ -73,7 +97,9 @@ struct InsightsView: View {
                             )
                         } else {
                             towerPicker
-                            
+
+                            smartRecommendationsSection
+
                             deliveryChartSection
                             
                             shortageChartSection
@@ -94,7 +120,38 @@ struct InsightsView: View {
         }
         .pickerStyle(.segmented)
     }
-    
+
+    private var smartRecommendationsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Smart Recommendations")
+                .font(.headline)
+
+            if recommendations.isEmpty {
+                PremiumCard {
+                    Text("No patterns detected yet")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 4)
+                }
+            } else {
+                ForEach(recommendations) { recommendation in
+                    PremiumCard(accentColor: recommendationAccent(for: recommendation.severity)) {
+                        SupplyRecommendationCard(recommendation: recommendation)
+                    }
+                }
+            }
+        }
+    }
+
+    private func recommendationAccent(for severity: RecommendationSeverity) -> Color {
+        switch severity {
+        case .action: return .orange
+        case .caution: return .yellow
+        case .info: return .cyan
+        }
+    }
+
     private var deliveryChartSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Deliverable Bundles Over Time")
@@ -130,7 +187,7 @@ struct InsightsView: View {
     
     private var shortageChartSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Shortages (Missing Pieces)")
+            Text("Shortages Over Time")
                 .font(.headline)
             
             PremiumCard {
@@ -144,7 +201,7 @@ struct InsightsView: View {
                         ForEach(shortageChartData) { data in
                             PointMark(
                                 x: .value("Date", data.date, unit: .day),
-                                y: .value("Shortage", data.shortagePieces)
+                                y: .value("Shortage", data.shortageAmount)
                             )
                             .foregroundStyle(by: .value("Item", data.item))
                             .symbol(by: .value("Item", data.item))

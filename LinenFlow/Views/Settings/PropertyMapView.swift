@@ -102,7 +102,7 @@ struct PropertyMapView: View {
         .frame(height: 168)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(alignment: .bottomLeading) {
-            Label("Tap to explore in 3D", systemImage: "cube.transparent.fill")
+            Label("Tap to explore map", systemImage: "map.fill")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 10)
@@ -124,7 +124,7 @@ struct PropertyMapView: View {
                 isMapExpanded = true
             }
         }
-        .accessibilityLabel("Hilton Hawaiian Village 3D property map")
+        .accessibilityLabel("Hilton Hawaiian Village property map")
         .accessibilityHint("Double tap to expand interactive tower map")
     }
 

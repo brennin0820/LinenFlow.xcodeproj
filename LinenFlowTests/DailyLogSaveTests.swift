@@ -107,7 +107,7 @@ final class DailyLogSaveTests: XCTestCase {
 
         let items = try container.mainContext.fetch(FetchDescriptor<LinenItem>())
         let bathMat = try XCTUnwrap(items.first { $0.name == "Bath Mat" })
-        // Diamond has 15 delivery floors, Bath Mat par = 3 → requiredPieces = 45.
+        // Diamond has 15 delivery floors, Bath Mat par = 3 bundles/floor → requiredPieces = 450.
         viewModel.addOrUpdateReceivingEntry(item: bathMat, binCount: nil, manualPieces: 45)
         _ = DailyLogSaveService.save(viewModel: viewModel, context: container.mainContext)
 
@@ -117,8 +117,8 @@ final class DailyLogSaveTests: XCTestCase {
 
         let fetched = try container.mainContext.fetch(FetchDescriptor<DailyLog>())
         let bathMatSummary = fetched.first?.summarySnapshot.first { $0.itemName == "Bath Mat" }
-        // Snapshot must still reflect the original par 3 × 15 = 45, not the changed 999.
-        XCTAssertEqual(bathMatSummary?.requiredPieces, 45)
+        // Snapshot must still reflect the original par 3 × 15 floors × 10 pcs/bdl = 450, not the changed 999.
+        XCTAssertEqual(bathMatSummary?.requiredPieces, 450)
     }
 
     func test_savedLog_bundleSizeSnapshotIsImmune() throws {
