@@ -6,7 +6,8 @@ final class ShiftPattern {
     var id: UUID
     var name: String
     private var daysOfWeekRawValues: [Int]
-    var clockInTime: DateComponents
+    var clockInHour: Int
+    var clockInMinute: Int
     var shiftDurationMinutes: Int
     var workLocation: SavedLocation?
     var isActive: Bool
@@ -20,8 +21,13 @@ final class ShiftPattern {
         }
     }
 
-    var clockInHour: Int { clockInTime.hour ?? 0 }
-    var clockInMinute: Int { clockInTime.minute ?? 0 }
+    var clockInTime: DateComponents {
+        get { DateComponents(hour: clockInHour, minute: clockInMinute) }
+        set {
+            clockInHour = newValue.hour ?? 0
+            clockInMinute = newValue.minute ?? 0
+        }
+    }
 
     init(
         id: UUID = UUID(),
@@ -35,7 +41,8 @@ final class ShiftPattern {
         self.id = id
         self.name = name
         self.daysOfWeekRawValues = daysOfWeek.map(\.rawValue).sorted()
-        self.clockInTime = clockInTime
+        self.clockInHour = clockInTime.hour ?? 0
+        self.clockInMinute = clockInTime.minute ?? 0
         self.shiftDurationMinutes = shiftDurationMinutes
         self.workLocation = workLocation
         self.isActive = isActive
@@ -44,7 +51,8 @@ final class ShiftPattern {
     /// Computes the next occurrence of this shift on or after the reference date.
     func nextOccurrence(after referenceDate: Date, calendar: Calendar) -> Date? {
         guard isActive, !daysOfWeek.isEmpty else { return nil }
-        guard let hour = clockInTime.hour, let minute = clockInTime.minute else { return nil }
+        let hour = clockInHour
+        let minute = clockInMinute
 
         let startOfReferenceDay = calendar.startOfDay(for: referenceDate)
 

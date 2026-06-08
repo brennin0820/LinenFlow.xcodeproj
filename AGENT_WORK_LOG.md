@@ -43,6 +43,8 @@ These files have the highest merge-conflict risk. **Serialize** — one active a
 | `f19a62cd` | Phase 12 — wizard orphan / Legacy folder + HomeView nav | `LinenFlow/Views/HomeView.swift`, `LinenFlow/Views/Flow/Legacy/**`, `LinenFlow/Views/Flow/ReceivingView.swift`, `LinenFlow/Views/Flow/ReviewReceivedView.swift`, `LinenFlow/Views/Flow/ResultsView.swift`, `LinenFlow/Views/Flow/FloorDistributionView.swift`, `LinenFlow/Views/Flow/RebalanceShortFloorsView.swift`, `LinenFlow.xcodeproj/project.pbxproj` | **ACTIVE — do not touch** | 2026-06-07 |
 | `9e5546a4` | Floor detection — VM + delivery UI | `LinenFlow/ViewModels/FlowViewModel.swift`, `LinenFlow/Views/Flow/ShiftCommandCenterView.swift`, `LinenFlow/Views/Flow/FloorChecklistView.swift`, `LinenFlow/Views/Flow/FloorDetectionCard.swift` | **ACTIVE — do not touch** | 2026-06-07 |
 | `50fed4e9` | Post-completion audit / build / install | `LinenFlow.xcodeproj/project.pbxproj` (shared — coordinate), `TestPlan.xctestplan`, `.github/workflows/**`, repo-wide verification (read-mostly; write only after other claims release) | **ACTIVE — do not touch** (advisory on pbxproj) | 2026-06-07 |
+| `qa-timeline-fix` | QA — TimelineComputationTests missing import | `LinenFlowTests/TimelineComputationTests.swift` | **ACTIVE — do not touch** | 2026-06-07 |
+| `kb-autoclose-fix` | Keyboard auto-dismiss — stable ScrollView + entry sync guard | `LinenFlow/Views/Flow/OneScreenLinenItemCard.swift` | **ACTIVE — do not touch** | 2026-06-07 |
 
 ---
 
@@ -67,6 +69,8 @@ Explicit locks — **do not edit** these paths while locked.
 | `LinenFlow/Views/Flow/ShiftCommandCenterView.swift` | `9e5546a4` | 2026-06-07 | Delivery command center |
 | `LinenFlow/Views/Flow/FloorChecklistView.swift` | `9e5546a4` | 2026-06-07 | Floor checklist |
 | `LinenFlow/Views/Flow/FloorDetectionCard.swift` | `9e5546a4` | 2026-06-07 | New or modified floor detection UI |
+| `LinenFlowTests/TimelineComputationTests.swift` | `qa-timeline-fix` | 2026-06-07 | QA — add @testable import HimmerFlow |
+| `LinenFlow/Views/Flow/OneScreenLinenItemCard.swift` | `kb-autoclose-fix` | 2026-06-07 | Keyboard auto-dismiss fix (supersedes `a7618ee3` claim for this file — coordinate on merge) |
 **Unlocked (safe for new claims if no other agent needs them):** Models, Services (except via FlowViewModel), `AppRootView.swift`, `android/**`, most Components not listed above, `docs/**`.
 
 ---
@@ -85,6 +89,7 @@ Explicit locks — **do not edit** these paths while locked.
 | `kb-safe-c8f2` | Keyboard-safe card positioning (priority bugfix) | `HomeView.swift`, `OneScreenLinenItemCard.swift`, `KeyboardPinnedEditorShell.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD FAILED** (unrelated: `SavedLocation.coordinate`, `ShiftTimelinePhase.requiresAcknowledgement`); changed files compile clean |
 | `c3f8a912` | Restore missing model APIs — device build/install | `ShiftPlannerSettings.swift`, `ShiftTimelinePhase.swift`, `ShiftTimelineSnapshot.swift`, `SavedLocation.swift`, `ShiftPattern.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS,id=00008150-00056D260282401C' -allowProvisioningUpdates build` — **BUILD SUCCEEDED**; `xcrun devicectl device install app --device 70093628-E2B5-509B-B807-4E06B510CEF1 …/Debug-iphoneos/HimmerFlow.app` — **INSTALL SUCCEEDED** |
 | `trackB-b7e2` | Parallel track B — compile error audit (no code changes) | _(read-only verification)_ | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'generic/platform=iOS' build` — **BUILD SUCCEEDED**; zero compile errors; prior fixes by `c3f8a912` already present (`SavedLocation.coordinate`, `ShiftTimelinePhase.displayName/statusEmoji/requiresAcknowledgement`, `ShiftPattern.clockInHour/Minute`, `Weekday` single definition) |
+| `swiftdata-cal-fix` | SwiftData crash — `_CalendarProtocol` in persisted DateComponents | `ShiftPlannerSettings.swift`, `ShiftPattern.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; simulator test launch failed (Invalid device state — environment, not code) |
 
 ---
 
@@ -115,6 +120,7 @@ See master plan for full table. Summary:
 | 2026-06-07 | Interaction contract (`track3-c7e8`) — background tap = keyboard dismiss only; Done = card dismiss |
 | 2026-06-07 | Model API restore + device install (`c3f8a912`) — hasCompletedOnboarding, phase display props, progressFraction, coordinate, clockInHour/Minute, isPointEvent |
 | 2026-06-07 | Track B compile audit (`trackB-b7e2`) — generic iOS device build passes; no additional fixes required |
+| 2026-06-07 | SwiftData Calendar crash fix (`swiftdata-cal-fix`) — replaced persisted `DateComponents` with `clockInHour`/`clockInMinute` on `ShiftPlannerSettings` and `ShiftPattern` |
 
 ---
 

@@ -3,8 +3,9 @@ import SwiftData
 
 @Model
 final class ShiftPlannerSettings {
-    /// The single hard anchor: time the user must be clocked in.
-    var clockInTime: DateComponents
+    /// The single hard anchor: time the user must be clocked in (hour/minute only; no Calendar).
+    var clockInHour: Int
+    var clockInMinute: Int
 
     var sleepDurationMinutes: Int
     var getReadyDurationMinutes: Int
@@ -34,7 +35,8 @@ final class ShiftPlannerSettings {
     }
 
     init(
-        clockInTime: DateComponents = DateComponents(hour: 6, minute: 0),
+        clockInHour: Int = 6,
+        clockInMinute: Int = 0,
         sleepDurationMinutes: Int = 480,
         getReadyDurationMinutes: Int = 45,
         walkToCarMinutes: Int = 5,
@@ -48,7 +50,8 @@ final class ShiftPlannerSettings {
         hasCompletedOnboarding: Bool = false,
         homeLocation: SavedLocation? = nil
     ) {
-        self.clockInTime = clockInTime
+        self.clockInHour = clockInHour
+        self.clockInMinute = clockInMinute
         self.sleepDurationMinutes = sleepDurationMinutes
         self.getReadyDurationMinutes = getReadyDurationMinutes
         self.walkToCarMinutes = walkToCarMinutes

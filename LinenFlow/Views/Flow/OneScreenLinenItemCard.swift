@@ -136,16 +136,15 @@ struct OneScreenLinenItemCard: View {
         }
     }
 
-    @ViewBuilder
+    /// Always wrap in `ScrollView` so the expression `TextField` keeps a stable identity
+    /// when the keyboard appears and `focusedCardMaxHeight` becomes non-nil.
     private var scrollableCardContent: some View {
-        if isFocused, let maxHeight = focusedCardMaxHeight {
-            ScrollView(.vertical, showsIndicators: true) {
-                cardContent
-            }
-            .frame(maxHeight: maxHeight)
-        } else {
+        let isScrollable = isFocused && focusedCardMaxHeight != nil
+        return ScrollView(.vertical, showsIndicators: isScrollable) {
             cardContent
         }
+        .scrollDisabled(!isScrollable)
+        .frame(maxHeight: focusedCardMaxHeight)
     }
 
     var body: some View {
@@ -171,6 +170,8 @@ struct OneScreenLinenItemCard: View {
             UserDefaults.standard.set(newValue.rawValue, forKey: cardBackgroundKey)
         }
         .onChange(of: entry?.calculatedPieces ?? 0) { _, newValue in
+            // Avoid overwriting in-progress typing when `onPiecesChange` echoes back from the VM.
+            guard !isFocused else { return }
             if newValue == 0 {
                 expression = ""
                 pieces = 0
