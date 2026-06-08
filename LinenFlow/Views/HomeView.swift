@@ -196,26 +196,27 @@ struct HomeView: View {
     private var useLastLogCard: some View {
         if let log = latestLogForSelectedTower {
             PremiumCard(accentColor: .cyan) {
-                HStack(spacing: 10) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 30, height: 30)
-                        .background(Color.cyan.opacity(0.72), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Restore Last Log")
-                            .font(.headline)
+                PremiumCardActionRow {
+                    HStack(spacing: 10) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.subheadline.weight(.bold))
                             .foregroundStyle(.white)
-                        Text(lastLogSubtitle(log))
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.58))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
+                            .frame(width: 30, height: 30)
+                            .background(Color.cyan.opacity(0.72), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Restore Last Log")
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                            Text(lastLogSubtitle(log))
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.58))
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.82)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
-
-                    Spacer()
-
+                } trailing: {
                     Button {
                         savedConfirmation = nil
                         viewModel.loadFromLog(log)
@@ -319,6 +320,43 @@ struct HomeView: View {
     }
 
     private var slimSummaryContent: some View {
+        ViewThatFits(in: .horizontal) {
+            slimSummaryInline
+            slimSummaryStacked
+        }
+    }
+
+    private var slimSummaryInline: some View {
+        HStack(spacing: 7) {
+            slimSummaryLeading
+            Spacer(minLength: 8)
+            slimSummaryFactsInline
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
+        .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke((selectedTowerColor ?? .white).opacity(0.12), lineWidth: 1)
+        )
+    }
+
+    private var slimSummaryStacked: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            slimSummaryLeading
+            slimSummaryFactsGrid
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 9)
+        .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .stroke((selectedTowerColor ?? .white).opacity(0.12), lineWidth: 1)
+        )
+    }
+
+    private var slimSummaryLeading: some View {
         HStack(spacing: 7) {
             Image(systemName: activeDeliveryModeIcon)
                 .font(.caption.weight(.bold))
@@ -329,10 +367,13 @@ struct HomeView: View {
             Text(activeDeliveryModeText)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.72))
-                .lineLimit(1)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
+        }
+    }
 
-            Spacer(minLength: 8)
-
+    private var slimSummaryFactsInline: some View {
+        HStack(spacing: 8) {
             compactInlineFact("\(totals.items)", "items", tint: .blue)
             compactInlineFact("\(totals.pieces)", "pcs", tint: .green)
             compactInlineFact("\(totals.bundles)", "bdl", tint: .indigo)
@@ -340,13 +381,17 @@ struct HomeView: View {
                 compactInlineFact("\(totals.loose)", "loose", tint: .orange)
             }
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 9)
-        .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .stroke((selectedTowerColor ?? .white).opacity(0.12), lineWidth: 1)
-        )
+    }
+
+    private var slimSummaryFactsGrid: some View {
+        PremiumCardAdaptiveGrid(spacing: 6, columnCount: 2) {
+            compactInlineFact("\(totals.items)", "items", tint: .blue)
+            compactInlineFact("\(totals.pieces)", "pcs", tint: .green)
+            compactInlineFact("\(totals.bundles)", "bdl", tint: .indigo)
+            if totals.loose > 0 {
+                compactInlineFact("\(totals.loose)", "loose", tint: .orange)
+            }
+        }
     }
 
     private func compactInlineFact(_ value: String, _ label: String, tint: Color) -> some View {
@@ -436,17 +481,17 @@ struct HomeView: View {
         let color = Color(hex: tower.identityColorHex ?? "") ?? .blue
 
         return PremiumCard(accentColor: color) {
-            HStack(spacing: 10) {
-                Image("tower_\(tower.name.lowercased())")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 34, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            PremiumCardActionRow {
+                HStack(spacing: 10) {
+                    Image("tower_\(tower.name.lowercased())")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 34, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
 
-                compactActiveFloorControl(tower)
-
-                Spacer(minLength: 8)
-
+                    compactActiveFloorControl(tower)
+                }
+            } trailing: {
                 Button {
                     withAnimation(.snappy(duration: 0.28)) {
                         towerPickerExpanded = true

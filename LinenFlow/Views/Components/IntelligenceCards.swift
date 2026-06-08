@@ -8,31 +8,32 @@ struct SmartFillCard: View {
 
     var body: some View {
         PremiumCard(accentColor: .indigo) {
-            HStack(spacing: 10) {
-                Image(systemName: "brain.head.profile.fill")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 30, height: 30)
-                    .background(Color.indigo.opacity(0.72), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Smart Fill")
-                        .font(.headline)
+            PremiumCardActionRow {
+                HStack(spacing: 10) {
+                    Image(systemName: "brain.head.profile.fill")
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
-                    Text(summary)
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.58))
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.82)
-                    if let confidence {
-                        Text(confidence.displayLabel)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.indigo.opacity(0.95))
+                        .frame(width: 30, height: 30)
+                        .background(Color.indigo.opacity(0.72), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Smart Fill")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text(summary)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.58))
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.82)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let confidence {
+                            Text(confidence.displayLabel)
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.indigo.opacity(0.95))
+                        }
                     }
                 }
-
-                Spacer()
-
+            } trailing: {
                 Button(action: onApply) {
                     Label("Apply Smart Fill", systemImage: "sparkles")
                         .font(.caption.weight(.bold))

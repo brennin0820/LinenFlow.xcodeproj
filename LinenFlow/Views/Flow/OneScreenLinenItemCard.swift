@@ -180,7 +180,7 @@ struct OneScreenLinenItemCard: View {
                 pieces: pieces,
                 bundleSize: item.bundleSize
             )
-            HStack(spacing: 6) {
+            PremiumCardAdaptiveGrid(spacing: 6) {
                 compactPinnedStat(label: "Pieces", value: pieces, tint: .white)
                 compactPinnedStat(label: "Bundles", value: conversion.fullBundles, tint: .green, emphasis: true)
                 compactPinnedStat(label: "Loose", value: conversion.loosePieces, tint: .orange)
@@ -211,43 +211,84 @@ struct OneScreenLinenItemCard: View {
     }
 
     private var cardHeader: some View {
+        ViewThatFits(in: .horizontal) {
+            cardHeaderInline
+            cardHeaderStacked
+        }
+    }
+
+    private var cardHeaderInline: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
-                LinenItemIcon(itemName: item.name, size: 38, boxed: true)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.name)
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                    Text(entrySubtitle)
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.56))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.78)
-                }
+                cardHeaderIdentity
+                Spacer(minLength: 8)
+                cardHeaderTrailingControls
+            }
+
+            cardHeaderMetaRow
+        }
+    }
+
+    private var cardHeaderStacked: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center, spacing: 10) {
+                cardHeaderIdentity
                 Spacer(minLength: 8)
                 anomalyIndicator
-                tripSelectionPill
-                activeDeliveryPill
                 statusIcon
             }
 
-            HStack(spacing: 6) {
-                if viewModel.usesParSystem {
-                    headerPill(unitIsBundles ? "Par \(item.parCount) bdl" : "Par \(item.parCount)", tint: .blue)
-                } else {
-                    headerPill("No par cap", tint: .teal)
-                }
-                headerPill("×\(item.bundleSize)", tint: .green)
-                Spacer(minLength: 6)
-                if let summary {
-                    headerPill(summary.status.displayName, tint: statusTint(summary.status))
-                }
+            PremiumCardAdaptiveGrid(spacing: 6, columnCount: 2) {
+                tripSelectionPill
+                activeDeliveryPill
+            }
+
+            cardHeaderMetaRow
+        }
+    }
+
+    private var cardHeaderIdentity: some View {
+        HStack(alignment: .center, spacing: 10) {
+            LinenItemIcon(itemName: item.name, size: 38, boxed: true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.name)
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+                Text(entrySubtitle)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.56))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
+    @ViewBuilder
+    private var cardHeaderTrailingControls: some View {
+        anomalyIndicator
+        tripSelectionPill
+        activeDeliveryPill
+        statusIcon
+    }
+
+    @ViewBuilder
+    private var cardHeaderMetaRow: some View {
+        HStack(spacing: 6) {
+            if viewModel.usesParSystem {
+                headerPill(unitIsBundles ? "Par \(item.parCount) bdl" : "Par \(item.parCount)", tint: .blue)
+            } else {
+                headerPill("No par cap", tint: .teal)
+            }
+            headerPill("×\(item.bundleSize)", tint: .green)
+            Spacer(minLength: 6)
+            if let summary {
+                headerPill(summary.status.displayName, tint: statusTint(summary.status))
+            }
+        }
+    }
     @ViewBuilder
     private var statusIcon: some View {
         if let summary {
@@ -476,7 +517,7 @@ struct OneScreenLinenItemCard: View {
     }
 
     private func bundleDeliveryStats(_ summary: CalculationSummary) -> some View {
-        HStack(spacing: 6) {
+        PremiumCardAdaptiveGrid(spacing: 6) {
             compactBundleStat("Can", summary.deliverableBundles, tint: .green)
             compactBundleStat("Short", summary.shortageBundles, tint: .red)
             compactBundleStat("Left", summary.leftoverBundles, tint: .orange)
@@ -485,7 +526,7 @@ struct OneScreenLinenItemCard: View {
     }
 
     private func pieceDeliveryStats(_ summary: CalculationSummary) -> some View {
-        HStack(spacing: 6) {
+        PremiumCardAdaptiveGrid(spacing: 6) {
             compactBundleStat("Received", summary.receivedPieces, tint: .green)
             compactBundleStat("Required", summary.requiredPieces, tint: .blue)
             compactBundleStat("Net", summary.differencePieces, tint: summary.differencePieces < 0 ? .red : .orange)
@@ -494,7 +535,7 @@ struct OneScreenLinenItemCard: View {
     }
 
     private func timesharePieceDeliveryStats(_ summary: CalculationSummary) -> some View {
-        HStack(spacing: 6) {
+        PremiumCardAdaptiveGrid(spacing: 6) {
             compactBundleStat("Received", summary.receivedPieces, tint: .green)
             compactBundleStat("Floors", distributionRows.count, tint: .blue)
             compactBundleStat("Remainder", summary.remainderPieces, tint: summary.remainderPieces > 0 ? .orange : .white)

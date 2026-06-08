@@ -11,6 +11,8 @@ struct PremiumCard<Content: View>: View {
     var style: PremiumCardStyle = .standard
     @ViewBuilder var content: () -> Content
     @Environment(AppThemeSettings.self) private var theme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,9 +28,10 @@ struct PremiumCard<Content: View>: View {
                     .frame(height: 4)
             }
             content()
-                .padding(theme.cardPadding)
+                .padding(responsivePadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(cardFill, in: RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: theme.cardCornerRadius, style: .continuous))
@@ -48,6 +51,17 @@ struct PremiumCard<Content: View>: View {
             radius: theme.showsCardShadow ? 12 : 0,
             y: theme.showsCardShadow ? 6 : 0
         )
+    }
+
+    private var responsivePadding: CGFloat {
+        var padding = theme.cardPadding
+        if horizontalSizeClass == .regular {
+            padding += 2
+        }
+        if dynamicTypeSize.isAccessibilitySize {
+            padding = max(10, padding - 4)
+        }
+        return padding
     }
 
     private var cardFill: LinearGradient {
