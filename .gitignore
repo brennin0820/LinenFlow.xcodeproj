@@ -7,6 +7,9 @@
 # Xcode
 build/
 DerivedData/
+.derivedDataDevice/
+.derivedDataPhase11/
+.derivedDataWidgetSync/
 build_output/
 *.pbxuser
 !default.pbxuser
