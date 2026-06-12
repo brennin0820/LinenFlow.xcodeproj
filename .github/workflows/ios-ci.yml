@@ -64,6 +64,7 @@ jobs:
           xcrun simctl list devices available | grep -E '^-- iOS|^[[:space:]]+iPhone ' || true
 
           PREFERRED_NAMES=(
+            "iPhone 17 Pro Max"
             "iPhone 16"
             "iPhone 17"
             "iPhone 15"

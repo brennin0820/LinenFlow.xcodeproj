@@ -28,6 +28,13 @@
 			remoteGlobalIDString = 62B430B52FB9670C000654DB;
 			remoteInfo = HimmerFlow;
 		};
+		CCDDEEFF1122334455660008 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 62B430AE2FB9670C000654DB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 62B430B52FB9670C000654DB;
+			remoteInfo = HimmerFlow;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -51,6 +58,7 @@
 		629AA0A22FBFC76C0077750C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		62B430B62FB9670C000654DB /* HimmerFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HimmerFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AABBCCDDEEFF112233440001 /* HimmerFlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HimmerFlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CCDDEEFF1122334455660001 /* LinenFlowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LinenFlowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -99,6 +107,11 @@
 			path = LinenFlowTests;
 			sourceTree = "<group>";
 		};
+		CCDDEEFF1122334455660002 /* LinenFlowUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LinenFlowUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -125,6 +138,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CCDDEEFF1122334455660005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -143,6 +163,7 @@
 				6265ADCF2FC3B33D0063599E /* TestPlan.xctestplan */,
 				62B430B82FB9670C000654DB /* LinenFlow */,
 				AABBCCDDEEFF112233440002 /* LinenFlowTests */,
+				CCDDEEFF1122334455660002 /* LinenFlowUITests */,
 				629AA0A42FBFC76C0077750C /* LinenFlow Widget */,
 				629AA09F2FBFC76B0077750C /* Frameworks */,
 				62B430B72FB9670C000654DB /* Products */,
@@ -154,6 +175,7 @@
 			children = (
 				62B430B62FB9670C000654DB /* HimmerFlow.app */,
 				AABBCCDDEEFF112233440001 /* HimmerFlowTests.xctest */,
+				CCDDEEFF1122334455660001 /* LinenFlowUITests.xctest */,
 				629AA09E2FBFC76B0077750C /* HimmerFlow WidgetExtension.appex */,
 			);
 			name = Products;
@@ -231,6 +253,29 @@
 			productReference = AABBCCDDEEFF112233440001 /* HimmerFlowTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		CCDDEEFF1122334455660003 /* LinenFlowUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CCDDEEFF1122334455660009 /* Build configuration list for PBXNativeTarget "LinenFlowUITests" */;
+			buildPhases = (
+				CCDDEEFF1122334455660004 /* Sources */,
+				CCDDEEFF1122334455660005 /* Frameworks */,
+				CCDDEEFF1122334455660006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CCDDEEFF1122334455660007 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CCDDEEFF1122334455660002 /* LinenFlowUITests */,
+			);
+			name = LinenFlowUITests;
+			packageProductDependencies = (
+			);
+			productName = LinenFlowUITests;
+			productReference = CCDDEEFF1122334455660001 /* LinenFlowUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -248,6 +293,10 @@
 						CreatedOnToolsVersion = 26.5;
 					};
 					AABBCCDDEEFF112233440003 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 62B430B52FB9670C000654DB;
+					};
+					CCDDEEFF1122334455660003 = {
 						CreatedOnToolsVersion = 26.5;
 						TestTargetID = 62B430B52FB9670C000654DB;
 					};
@@ -272,6 +321,7 @@
 			targets = (
 				62B430B52FB9670C000654DB /* HimmerFlow */,
 				AABBCCDDEEFF112233440003 /* HimmerFlowTests */,
+				CCDDEEFF1122334455660003 /* LinenFlowUITests */,
 				629AA09D2FBFC76B0077750C /* HimmerFlow WidgetExtension */,
 			);
 		};
@@ -294,6 +344,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AABBCCDDEEFF112233440006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CCDDEEFF1122334455660006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -324,6 +381,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CCDDEEFF1122334455660004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -336,6 +400,11 @@
 			isa = PBXTargetDependency;
 			target = 62B430B52FB9670C000654DB /* HimmerFlow */;
 			targetProxy = AABBCCDDEEFF112233440008 /* PBXContainerItemProxy */;
+		};
+		CCDDEEFF1122334455660007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 62B430B52FB9670C000654DB /* HimmerFlow */;
+			targetProxy = CCDDEEFF1122334455660008 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -670,6 +739,46 @@
 			};
 			name = Release;
 		};
+		CCDDEEFF112233445566000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y7UUXVS2J4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Banana.LinenFlowUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = HimmerFlow;
+			};
+			name = Debug;
+		};
+		CCDDEEFF112233445566000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y7UUXVS2J4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Banana.LinenFlowUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = HimmerFlow;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -705,6 +814,15 @@
 			buildConfigurations = (
 				AABBCCDDEEFF11223344000A /* Debug */,
 				AABBCCDDEEFF11223344000B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CCDDEEFF1122334455660009 /* Build configuration list for PBXNativeTarget "LinenFlowUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CCDDEEFF112233445566000A /* Debug */,
+				CCDDEEFF112233445566000B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

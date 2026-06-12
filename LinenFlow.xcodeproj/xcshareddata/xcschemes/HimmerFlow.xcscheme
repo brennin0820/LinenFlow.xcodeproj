@@ -35,6 +35,20 @@
                ReferencedContainer = "container:LinenFlow.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "CCDDEEFF1122334455660003"
+               BuildableName = "LinenFlowUITests.xctest"
+               BlueprintName = "LinenFlowUITests"
+               ReferencedContainer = "container:LinenFlow.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -57,6 +71,17 @@
                identifier = "com.apple.dt.IDEFoundation.CurrentLocationScenarioIdentifier"
                referenceType = "1">
             </LocationScenarioReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "CCDDEEFF1122334455660003"
+               BuildableName = "LinenFlowUITests.xctest"
+               BlueprintName = "LinenFlowUITests"
+               ReferencedContainer = "container:LinenFlow.xcodeproj">
+            </BuildableReference>
          </TestableReference>
       </Testables>
    </TestAction>

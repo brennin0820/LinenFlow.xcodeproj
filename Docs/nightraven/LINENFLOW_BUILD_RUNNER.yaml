@@ -1,0 +1,376 @@
+# LinenFlow / HimmerFlow — NightRaven Core build runner
+# Human plan: Docs/BUILD_PLAN_FULL.md
+# Orchestrator: .claude/skills/nightraven/SKILL.md (God's Eye + NightRaven = "Grav Nightraven")
+#
+# Usage (Cursor agent chat):
+#   /nightraven Execute LinenFlow per Docs/nightraven/LINENFLOW_BUILD_RUNNER.yaml — build entire thing
+# Or:
+#   Read AGENTS.md and Docs/BUILD_PLAN_FULL.md. Run NightRaven Phase 0, then execute every phase
+#   where status is pending or partial, in order. User approval: "build the entire thing".
+
+project:
+  id: linenflow-himmerflow
+  name: LinenFlow
+  workspace: /Users/brentlenninorlanda/Developer/crazyboy
+  scheme: HimmerFlow
+  xcodeproj: LinenFlow.xcodeproj
+  android_dir: android
+  complexity_full_build: CRITICAL
+
+orchestration:
+  memory: docs/14_SESSION_HANDOFF.md
+  overlay: docs/GODS_EYE_REPO_OVERLAY.md
+  coordination: AGENT_WORK_LOG.md
+  build_ledger: docs/ledgers/BUILD_LEDGER.md
+  audit_ledger: docs/ledgers/AUDIT_LEDGER.md
+  divisions_full_build:
+    - Planning
+    - Builder
+    - Architecture Auditor
+    - Security Auditor
+    - Performance Auditor
+    - General Auditor
+  ship_signal: "build the entire thing" # or "code it" per phase
+
+current_phase: "17"
+
+verification_defaults:
+  ios_build: |
+    xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow \
+      -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
+  ios_test: |
+    xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow \
+      -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' test
+  android_build: |
+    cd android && ./gradlew assembleDebug
+  manual_qa: Docs/LinenTabManualQA.md
+
+phases:
+  - id: "0"
+    name: Environment and NightRaven wiring
+    status: done
+    track: meta
+    plan_section: "Phase 0"
+    nightraven_prompt: "/nightraven Phase 0 — verify God's Eye + NightRaven install; no code unless missing"
+    acceptance:
+      - .cursor/rules/gods-eye-context-intent.mdc exists
+      - .claude/skills/nightraven/SKILL.md exists
+      - docs/ledgers/BUILD_LEDGER.md exists
+      - AGENT_WORK_LOG.md claim protocol documented
+
+  - id: "1"
+    name: Xcode project for iOS
+    status: done
+    track: A
+    plan_section: "Phase 1"
+    files:
+      - LinenFlow.xcodeproj/project.pbxproj
+    acceptance:
+      - ios_build succeeds
+
+  - id: "2"
+    name: App foundation and navigation shell
+    status: done
+    track: A
+    plan_section: "Phase 2"
+    files:
+      - LinenFlow/App/HimmerFlowApp.swift
+      - LinenFlow/Views/HomeView.swift
+    acceptance:
+      - ios_build succeeds
+
+  - id: "3"
+    name: SwiftData models
+    status: done
+    track: A
+    plan_section: "Phase 3"
+    files:
+      - LinenFlow/Models/
+    acceptance:
+      - ios_build succeeds
+
+  - id: "4"
+    name: Seed data
+    status: done
+    track: A
+    plan_section: "Phase 4"
+    files:
+      - LinenFlow/SeedData/DefaultData.swift
+      - LinenFlow/SeedData/SeedService.swift
+    acceptance:
+      - Five+ towers seed on launch
+
+  - id: "5"
+    name: Safe arithmetic engine
+    status: done
+    track: A
+    plan_section: "Phase 5"
+    files:
+      - LinenFlow/Utilities/ArithmeticParser.swift
+      - LinenFlowTests/ArithmeticTests.swift
+    acceptance:
+      - ArithmeticTests 26/26 pass
+
+  - id: "6"
+    name: Calculator services
+    status: done
+    track: A
+    plan_section: "Phase 6"
+    files:
+      - LinenFlow/Services/LinenCalculatorService.swift
+      - LinenFlow/Services/BundleLibrary.swift
+      - LinenFlowTests/CalculatorTests.swift
+    acceptance:
+      - CalculatorTests pass
+
+  - id: "7"
+    name: FlowViewModel
+    status: done
+    track: A
+    plan_section: "Phase 7"
+    files:
+      - LinenFlow/ViewModels/FlowViewModel.swift
+      - LinenFlowTests/FlowViewModelTests.swift
+    acceptance:
+      - FlowViewModelTests 58/58 pass
+
+  - id: "8"
+    name: Premium UI components
+    status: done
+    track: B
+    plan_section: "Phase 8"
+    files:
+      - LinenFlow/Views/Components/
+    acceptance:
+      - ios_build succeeds
+
+  - id: "9"
+    name: Five-tab shell and deep links
+    status: done
+    track: C
+    plan_section: "Phase 9"
+    files:
+      - LinenFlow/Views/AppRootView.swift
+      - LinenFlow/Utilities/WidgetDeepLinkRouter.swift
+    acceptance:
+      - WidgetDeepLinkRouterTests pass
+      - linenflow:// and himmerflow:// open Linen tab
+
+  - id: "10"
+    name: HomeView and one-screen linen cards
+    status: done
+    track: D-E
+    plan_section: "Phase 10"
+    files:
+      - LinenFlow/Views/HomeView.swift
+      - LinenFlow/Views/Flow/OneScreenLinenItemCard.swift
+    acceptance:
+      - Manual Gate 2 in BUILD_PLAN_FULL passes
+
+  - id: "11"
+    name: Intelligence and restore
+    status: done
+    track: F
+    plan_section: "Phase 11"
+    files:
+      - LinenFlow/Services/ShiftIntelligenceService.swift
+      - LinenFlow/Views/Components/IntelligenceCards.swift
+    acceptance:
+      - Smart Fill and Restore cards appear when logs exist
+
+  - id: "12"
+    name: Save clear delivery
+    status: done
+    track: G
+    plan_section: "Phase 12"
+    files:
+      - LinenFlow/Services/DailyLogSaveService.swift
+      - LinenFlow/Views/Flow/ShiftCommandCenterView.swift
+    acceptance:
+      - DailyLogSaveTests pass
+      - Manual Gate 3 passes
+
+  - id: "13"
+    name: Widget sync and Live Activities
+    status: done
+    track: H
+    plan_section: "Phase 13"
+    files:
+      - LinenFlow/Services/SharedWidgetStateManager.swift
+      - LinenFlow Widget/
+      - LinenFlowWidgets/
+    acceptance:
+      - App Group group.com.himmerflow.shared syncs widget state
+
+  - id: "14"
+    name: Shift tab and work schedule
+    status: done
+    track: shift
+    plan_section: "Phase 14"
+    files:
+      - LinenFlow/Views/Tabs/ShiftTabView.swift
+      - LinenFlow/Views/WorkSchedule/
+      - LinenFlow/Core/ShiftOrchestrator.swift
+    acceptance:
+      - ShiftPlannerTests pass
+      - GeofenceHandlingTests pass
+
+  - id: "15"
+    name: Insights and Logs tabs
+    status: done
+    track: tabs
+    plan_section: "Phase 15"
+    files:
+      - LinenFlow/Views/Insights/InsightsView.swift
+      - LinenFlow/Views/Logs/
+    acceptance:
+      - DailyReportServiceTests pass
+
+  - id: "16"
+    name: Settings onboarding property map
+    status: done
+    track: settings
+    plan_section: "Phase 16"
+    files:
+      - LinenFlow/Views/Settings/
+      - LinenFlow/Views/Onboarding/
+      - Docs/site-plan/
+    acceptance:
+      - Settings builds; site plan opens locally
+
+  - id: "17"
+    name: Accessibility polish
+    status: partial
+    track: I
+    plan_section: "Phase 17"
+    depends_on: ["10"]
+    parallel_with: ["19"]
+    nightraven_prompt: "/nightraven Phase 17 — Linen tab accessibility: isCurrent wiring, VoiceOver, Dynamic Type, Reduce Motion"
+    files:
+      - LinenFlow/Views/Flow/OneScreenLinenItemCard.swift
+      - LinenFlow/Views/HomeView.swift
+      - LinenFlow/Views/Components/KeyboardPinnedEditorShell.swift
+      - LinenFlow/Views/Components/PremiumCard.swift
+    acceptance:
+      - isCurrent passed for focused linen card
+      - Docs/LinenTabManualQA.md VoiceOver section passes
+      - ios_test succeeds
+
+  - id: "18"
+    name: Wizard orphan cleanup
+    status: partial
+    track: J
+    plan_section: "Phase 18"
+    depends_on: ["10"]
+    nightraven_prompt: "/nightraven Phase 18 — finalize wizard Legacy archive; remove orphan FlowStep navigation from HomeView"
+    files:
+      - LinenFlow/Views/HomeView.swift
+      - LinenFlow/Views/Flow/Legacy/
+      - LinenFlow.xcodeproj/project.pbxproj
+    acceptance:
+      - No navigationDestination for FlowStep in production HomeView
+      - Legacy views excluded from HimmerFlow target
+
+  - id: "19"
+    name: Floor detection delivery polish
+    status: partial
+    track: floor
+    plan_section: "Phase 19"
+    depends_on: ["12"]
+    nightraven_prompt: "/nightraven Phase 19 — wire FloorSensingService into delivery UI; graceful simulator unavailable state"
+    files:
+      - LinenFlow/ViewModels/FlowViewModel.swift
+      - LinenFlow/Views/Flow/ShiftCommandCenterView.swift
+      - LinenFlow/Views/Flow/FloorChecklistView.swift
+      - LinenFlow/Views/Components/FloorDetectionCard.swift
+      - LinenFlow/Services/FloorSensingService.swift
+      - LinenFlowTests/FloorSensingEstimatorTests.swift
+    acceptance:
+      - FloorSensingEstimatorTests pass
+      - FloorDetectionCard shows on device with barometer
+      - Simulator shows unavailable without crash
+
+  - id: "20"
+    name: LogFilterBuilder
+    status: pending
+    track: logs
+    plan_section: "Phase 20"
+    depends_on: ["15"]
+    nightraven_prompt: "/nightraven Phase 20 — implement LogFilterBuilder for Logs tab filters; uncomment LogFilterBuilderTests"
+    files:
+      - LinenFlow/Services/LogFilterBuilder.swift
+      - LinenFlow/Views/Logs/LogsView.swift
+      - LinenFlowTests/LogFilterBuilderTests.swift
+    acceptance:
+      - LogFilterBuilderTests all pass
+      - Logs tab filter UI works
+
+  - id: "21"
+    name: TowerConfigService
+    status: pending
+    track: settings
+    plan_section: "Phase 21"
+    depends_on: ["16"]
+    nightraven_prompt: "/nightraven Phase 21 — implement TowerConfigService; uncomment TowerConfigServiceTests"
+    files:
+      - LinenFlow/Services/TowerConfigService.swift
+      - LinenFlow/Views/Settings/
+      - LinenFlowTests/TowerConfigServiceTests.swift
+    acceptance:
+      - TowerConfigServiceTests all pass
+
+  - id: "22"
+    name: Android parity
+    status: skipped
+    track: K
+    plan_section: "Phase 22"
+    depends_on: ["10", "11", "12"]
+    parallel_with: ["17", "20", "21", "23"]
+    nightraven_prompt: "/nightraven Phase 22 — Android Compose parity: smart fill, distribution cards, delivery screen, widget"
+    files:
+      - android/app/src/main/java/com/himmerflow/android/
+    acceptance:
+      - android_build succeeds
+      - Feature parity checklist in BUILD_PLAN_FULL Phase 22 complete
+
+  - id: "23"
+    name: XCUITest target
+    status: pending
+    track: L
+    plan_section: "Phase 23"
+    depends_on: ["17", "18"]
+    nightraven_prompt: "/nightraven Phase 23 — add LinenFlowUITests target; automate LinenTabManualQA smoke path"
+    files:
+      - LinenFlowUITests/
+      - LinenFlow.xcodeproj/project.pbxproj
+      - TestPlan.xctestplan
+    acceptance:
+      - UI test target runs in ios_test
+      - Smoke path tower select enter save log passes
+
+  - id: "24"
+    name: CI and release hardening
+    status: partial
+    track: ci
+    plan_section: "Phase 24"
+    depends_on: ["23"]
+    nightraven_prompt: "/nightraven Phase 24 — verify GitHub Actions ios-ci and android-ci green; update TestPlan"
+    files:
+      - .github/workflows/
+      - TestPlan.xctestplan
+    acceptance:
+      - ios-ci workflow passes on PR
+      - android-ci workflow passes
+
+  - id: "25"
+    name: Final QA and release gate
+    status: pending
+    track: qa
+    plan_section: "Phase 25"
+    depends_on: ["17", "18", "19", "20", "21", "22", "23", "24"]
+    nightraven_prompt: "/nightraven Phase 25 — Final QA gate: 283+ unit tests, manual QA, God's Eye Final Report"
+    acceptance:
+      - ios_test 283+ tests pass
+      - Docs/LinenTabManualQA.md full pass
+      - Docs/CriteriaChecklist.md all rows green
+      - God's Eye Final Report PASS

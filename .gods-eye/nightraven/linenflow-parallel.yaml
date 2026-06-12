@@ -1,0 +1,126 @@
+# Grav Nightraven — LinenFlow parallel runner manifest
+# Framework: gods-eye + NightRaven Core
+# Human plan: Docs/BUILD_PLAN_FULL.md
+# Monitor: Docs/PARALLEL_RUN_STATUS.md
+
+version: 1
+project:
+  name: LinenFlow
+  label: LinenFlow (HimmerFlow)
+  workspace: /Users/brentlenninorlanda/Developer/crazyboy
+  framework_root: /Users/brentlenninorlanda/Developer/gods-eye
+  registry_entry: gods-eye/scripts/gods-eye-projects.conf
+
+orchestrator:
+  name: grav-nightraven
+  skill: .claude/skills/nightraven/SKILL.md
+  complexity: MEDIUM
+  divisions:
+    - planning
+    - builder
+    - auditor
+  ledgers:
+    build: docs/ledgers/BUILD_LEDGER.md
+    audit: docs/ledgers/AUDIT_LEDGER.md
+  coordination:
+    claim_file: AGENT_WORK_LOG.md
+    protocol: Docs/AGENT_COORDINATION.md
+
+plan:
+  primary: Docs/BUILD_PLAN_FULL.md
+  detail: Docs/superpowers/plans/2026-06-08-linen-tab-master-plan.md
+
+invoke:
+  cursor_agent: |
+    Read AGENTS.md, docs/14_SESSION_HANDOFF.md, and Docs/BUILD_PLAN_FULL.md.
+    Run Grav Nightraven parallel build per .gods-eye/nightraven/linenflow-parallel.yaml.
+    Claim files in AGENT_WORK_LOG.md before editing. Do not commit unless asked.
+  nightraven_skill: |
+    /nightraven Execute Docs/BUILD_PLAN_FULL.md Phases 11–14 in parallel per linenflow-parallel.yaml streams. MEDIUM complexity. Read AGENT_WORK_LOG.md first.
+
+disabled_streams:
+  - android-parity  # OUT OF SCOPE — user: no Android (Track K / Phase 13 skipped)
+
+parallel_streams:
+  - id: ios-polish
+    phase: 11
+    track: I
+    status: dispatched
+    priority: P0
+    description: PremiumCard isCurrent wiring, VoiceOver, Dynamic Type on linen cards
+    paths:
+      - LinenFlow/Views/Flow/OneScreenLinenItemCard.swift
+      - LinenFlow/Views/Components/PremiumCard.swift
+    conflicts:
+      - LinenFlow/Views/HomeView.swift
+    verify:
+      - xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
+
+  - id: ios-wizard
+    phase: 12
+    track: J
+    status: dispatched
+    priority: P1
+    description: Wizard orphan decision — Legacy folder excluded from target
+    paths:
+      - LinenFlow/Views/Flow/Legacy/**
+      - LinenFlow.xcodeproj/project.pbxproj
+    conflicts:
+      - LinenFlow/Views/HomeView.swift
+    verify:
+      - xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' build
+
+  - id: android-parity
+    phase: 13
+    track: K
+    status: skipped
+    scope: out_of_scope
+    priority: —
+    description: "OUT OF SCOPE (user: no Android). Historical plan: Smart Fill, Restore Last Log, inline distribution, delivery screen, widget — do not dispatch."
+    paths:
+      - android/**
+    conflicts: []
+    verify:
+      - echo "SKIPPED — android-parity out of scope"
+
+
+  - id: ios-uitest
+    phase: 14
+    track: L
+    status: dispatched
+    priority: P2
+    description: XCUITest target and Linen tab happy path
+    paths:
+      - LinenFlowUITests/**
+      - LinenFlow.xcodeproj/project.pbxproj
+    conflicts:
+      - LinenFlow.xcodeproj/project.pbxproj
+    verify:
+      - xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' test -only-testing:LinenFlowUITests
+
+  - id: ci-gates
+    phase: gate
+    track: infra
+    status: dispatched
+    priority: P1
+    description: Verify ios-ci.yml and android-ci.yml configs
+    paths:
+      - .github/workflows/ios-ci.yml
+      - .github/workflows/android-ci.yml
+    conflicts: []
+    verify:
+      - cat .github/workflows/ios-ci.yml
+      - cat .github/workflows/android-ci.yml
+
+serialization_rules:
+  - one_agent_per_swift_file: true
+  - serialize:
+      - LinenFlow/Views/HomeView.swift
+      - LinenFlow/ViewModels/FlowViewModel.swift
+      - LinenFlow.xcodeproj/project.pbxproj
+
+monitor:
+  status_doc: Docs/PARALLEL_RUN_STATUS.md
+  compass_dev: |
+    cd /Users/brentlenninorlanda/Developer/gods-eye/apps/compass && npm run dev
+  agent_work_log: AGENT_WORK_LOG.md

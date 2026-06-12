@@ -6,6 +6,9 @@ Short reference for humans and coding agents working in parallel on LinenFlow.
 
 **Master plan:** [`docs/superpowers/plans/2026-06-08-linen-tab-master-plan.md`](superpowers/plans/2026-06-08-linen-tab-master-plan.md)
 
+**Build orchestration:** [`BUILD_PLAN_FULL.md`](BUILD_PLAN_FULL.md)
+**Platform scope (2026-06-11):** Parallel agents are **iOS-only**. Do not claim or edit `android/**`. See [`BUILD_PLAN_FULL.md`](BUILD_PLAN_FULL.md).
+
 **Cursor rule:** `.cursor/rules/agent-file-coordination.mdc` (always applied)
 
 ---

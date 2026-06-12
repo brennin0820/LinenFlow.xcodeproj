@@ -4,7 +4,7 @@
 >
 > Master plan: `docs/superpowers/plans/2026-06-08-linen-tab-master-plan.md`
 
-**Last updated:** 2026-06-07 (parallel linen polish — `parallel-linen-polish`)
+**Last updated:** 2026-06-11 (Phase 14 ios-uitest — XCUITest happy path)
 
 ---
 
@@ -43,6 +43,8 @@ These files have the highest merge-conflict risk. **Serialize** — one active a
 | `f19a62cd` | Phase 12 — wizard orphan / Legacy folder + HomeView nav | `LinenFlow/Views/HomeView.swift`, `LinenFlow/Views/Flow/Legacy/**`, `LinenFlow/Views/Flow/ReceivingView.swift`, `LinenFlow/Views/Flow/ReviewReceivedView.swift`, `LinenFlow/Views/Flow/ResultsView.swift`, `LinenFlow/Views/Flow/FloorDistributionView.swift`, `LinenFlow/Views/Flow/RebalanceShortFloorsView.swift`, `LinenFlow.xcodeproj/project.pbxproj` | **ACTIVE — do not touch** | 2026-06-07 |
 | `9e5546a4` | Floor detection — VM + delivery UI | `LinenFlow/ViewModels/FlowViewModel.swift`, `LinenFlow/Views/Flow/ShiftCommandCenterView.swift`, `LinenFlow/Views/Flow/FloorChecklistView.swift`, `LinenFlow/Views/Flow/FloorDetectionCard.swift` | **ACTIVE — do not touch** | 2026-06-07 |
 | `50fed4e9` | Post-completion audit / build / install | `LinenFlow.xcodeproj/project.pbxproj` (shared — coordinate), `TestPlan.xctestplan`, `.github/workflows/**`, repo-wide verification (read-mostly; write only after other claims release) | **ACTIVE — do not touch** (advisory on pbxproj) | 2026-06-07 |
+| `parallel-ios-full` | Phase 11 card a11y + Phase 14 prep services/tests + UITest scaffold | `LinenFlow/Services/LogFilterBuilder.swift`, `LinenFlow/Services/TowerConfigService.swift`, `LinenFlow/Views/Logs/LogsView.swift`, `LinenFlow/Views/Flow/OneScreenLinenItemCard.swift`, `LinenFlow/Views/AppRootView.swift`, `LinenFlowTests/LogFilterBuilderTests.swift`, `LinenFlowTests/TowerConfigServiceTests.swift` | **ACTIVE — do not touch** | 2026-06-11 |
+| `ios-uitest` | Phase 14 — XCUITest Linen tab happy path | `LinenFlowUITests/LinenTabUITests.swift`, `docs/ledgers/BUILD_LEDGER.md` | **COMPLETE** | 2026-06-11 |
 
 ---
 
@@ -94,6 +96,7 @@ Explicit locks — **do not edit** these paths while locked.
 | `calc-all-premium-inputs` | Calculator behavior on all premium value inputs | `PremiumNumberInput.swift`, `PremiumExpressionInput.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; `HimmerFlowTests/ArithmeticTests` (33 tests) — **TEST SUCCEEDED** |
 | `calc-keys-wire` | Calculator operator strip on card value inputs | `PremiumExpressionInput.swift`, `PremiumNumberInput.swift`, `OneScreenLinenItemCard.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; focus-gated strip on all Linen tab cards; ReceivingView/RebalanceShortFloors blocked by `f19a62cd` lock |
 | `parallel-linen-polish` | Linen tab + shared input polish | `OneScreenLinenItemCard.swift`, `HomeView.swift` (linen tab), `PremiumExpressionInput.swift`, `PremiumNumberInput.swift`, `KeyboardPinnedEditorShell.swift` | 2026-06-07 | `xcodebuild -project LinenFlow.xcodeproj -scheme HimmerFlow -destination 'platform=iOS Simulator,name=iPhone Air' build` — **BUILD SUCCEEDED**; removed dead `onEditRequested`, orphaned placeholder/panel views, unused motion transitions; label + status-line alignment polish on expression inputs |
+| `ios-uitest` | Phase 14 — XCUITest Linen tab happy path | `LinenFlowUITests/LinenTabUITests.swift`, `AGENT_WORK_LOG.md`, `docs/ledgers/BUILD_LEDGER.md` | 2026-06-11 | `xcodebuild … test -only-testing:LinenFlowUITests` — **BLOCKED**: no `LinenFlowUITests` target in project (pbxproj lock `f19a62cd`/`50fed4e9`); test source implemented, 4 test methods |
 
 ---
 

@@ -4,6 +4,9 @@
 >
 > **Coordination file:** Claim work in `AGENT_WORK_LOG.md` before touching files. Never edit the same file from two parallel agents.
 
+> **Scope (2026-06-11):** **Android / Track K / Phase 13 is OUT OF SCOPE.** Do not dispatch parallel agents on `android/**`. iOS tracks (A–J, L) and God's Eye coordination continue unchanged.
+
+
 **Goal:** Build and maintain the **Linen tab** — the primary operational surface where hotel linen attendants select a tower, enter received inventory, see inline calculations and per-floor distribution, save daily logs, and open live delivery guidance.
 
 **Architecture:** The Linen tab is **not** a separate `LinenTabView`. It is tab index 0 in `AppRootView`, labeled "Linen", deep-link key `.home`, root view **`HomeView`**. State lives in app-scoped **`FlowViewModel`**; calculations live in **`LinenCalculatorService`** (never in views). The primary UX is a **one-screen card grid** (`OneScreenLinenItemCard`) that supersedes the older multi-step wizard (`ReceivingView` → `ReviewReceivedView` → `ResultsView` → `FloorDistributionView`).
@@ -32,7 +35,7 @@
 14. [Phase 10 — Widget Sync (Track H)](#phase-10--widget-sync-track-h)
 15. [Phase 11 — Polish & Accessibility (Track I)](#phase-11--polish--accessibility-track-i)
 16. [Phase 12 — Wizard Flow Decision (Track J)](#phase-12--wizard-flow-decision-track-j)
-17. [Phase 13 — Android Parity (Track K)](#phase-13--android-parity-track-k)
+17. [Phase 13 — Android Parity (Track K) — SKIPPED](#phase-13--android-parity-track-k--out-of-scope--skipped)
 18. [Phase 14 — UI Tests (Track L)](#phase-14--ui-tests-track-l)
 19. [Verification Gates](#verification-gates)
 20. [File Ownership Map](#file-ownership-map)
@@ -136,8 +139,8 @@ Phase 1-3 (Track A: Models + Services + FlowViewModel) ─── GATE ───�
                                     │
                     ┌───────────────┴───────────────┐
                     ▼                               ▼
-               Track K                         Track L
-               Android parity                  XCUITest (optional)
+            (Track K SKIPPED)                  Track L
+            Android — OUT OF SCOPE             XCUITest (optional)
 ```
 
 | Track | Agent focus | Depends on | Can parallel with |
@@ -152,8 +155,8 @@ Phase 1-3 (Track A: Models + Services + FlowViewModel) ─── GATE ───�
 | **H** | SharedWidgetStateManager wiring | A, G | G |
 | **I** | isCurrent, VoiceOver, Dynamic Type | E, D | — (touches HomeView + card) |
 | **J** | Wizard orphan decision | D | K, L |
-| **K** | Android LinenScreen | A concepts | All iOS tracks |
-| **L** | XCUITest target | All iOS | K |
+| ~~**K**~~ | ~~Android LinenScreen~~ | — | **OUT OF SCOPE (2026-06-11)** |
+| **L** | XCUITest target | All iOS | I, J (optional) |
 
 ---
 
@@ -627,9 +630,11 @@ ForEach(group.items) { item in
 
 ---
 
-## Phase 13 — Android Parity (Track K)
+## Phase 13 — Android Parity (Track K) — OUT OF SCOPE / SKIPPED
 
-**Files:**
+**User decision:** No Android parallel work. The `android/` tree is frozen for this plan; do not claim Track K in `AGENT_WORK_LOG.md`. Re-enable only with explicit user approval.
+
+**Files (reference only — do not implement):**
 - `android/app/src/main/java/com/himmerflow/android/ui/HimmerFlowApp.kt`
 - `android/app/src/main/java/com/himmerflow/android/ui/HimmerFlowViewModel.kt`
 - `android/app/src/main/java/com/himmerflow/android/data/LinenCalculator.kt`
@@ -722,12 +727,12 @@ Use this to assign parallel agents without conflicts.
 | `LinenFlow/Services/DailyLogSaveService.swift` | G | |
 | `LinenFlow/Services/SharedWidgetStateManager.swift` | H | |
 | `LinenFlow/Views/Flow/{Receiving,Review,Results,Floor}*.swift` | J | Wizard decision |
-| `android/**` | K | Independent |
+| `android/**` | — | **OUT OF SCOPE** — no agent claims |
 | `LinenFlowUITests/**` | L | Independent |
 
 ---
 
-## Recommended Parallel Dispatch (4 agents)
+## Recommended Parallel Dispatch (3 iOS agents — Android excluded)
 
 For **remaining work** on the already-built Linen tab:
 
@@ -736,7 +741,7 @@ For **remaining work** on the already-built Linen tab:
 | **Agent 1** | I | Phase 11 — isCurrent wiring + remove duplicate stroke | Small, P0 |
 | **Agent 2** | I | Phase 11 — VoiceOver on OneScreenLinenItemCard | Medium, P1 |
 | **Agent 3** | J | Phase 12 — wizard orphan decision | Small, architecture |
-| **Agent 4** | K | Phase 13 — Android smart fill + distribution cards | Medium, separate repo folder |
+| ~~**Agent 4**~~ | ~~K~~ | ~~Phase 13 — Android~~ | **Removed — Android OUT OF SCOPE** |
 
 Agents 1 and 2 must **not** both edit `HomeView.swift` simultaneously. Agent 1 takes `HomeView` focus overlay removal; Agent 2 takes `OneScreenLinenItemCard.swift` only.
 

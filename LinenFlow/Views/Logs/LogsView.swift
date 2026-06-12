@@ -97,13 +97,7 @@ struct LogsView: View {
     }
 
     private var filteredLogs: [DailyLog] {
-        switch filter {
-        case .all: return logs
-        case .tower(let name): return logs.filter { $0.towerName == name }
-        case .shortages: return logs.filter { log in
-            log.summarySnapshot.contains { $0.status == .shortage }
-        }
-        }
+        LogFilterBuilder.filter(logs, by: filter)
     }
 
     private func delete(_ log: DailyLog) {
@@ -118,26 +112,6 @@ struct LogsView: View {
 
 enum LogRoute: Hashable {
     case detail(id: UUID)
-}
-
-enum LogFilter: Hashable, Identifiable, CaseIterable {
-    case all
-    case tower(String)
-    case shortages
-
-    static var allCases: [LogFilter] {
-        [.all] + DefaultData.towers.map { .tower($0.name) } + [.shortages]
-    }
-
-    var id: String { label }
-
-    var label: String {
-        switch self {
-        case .all: return "All"
-        case .tower(let n): return n
-        case .shortages: return "Shortages"
-        }
-    }
 }
 
 // MARK: - Card

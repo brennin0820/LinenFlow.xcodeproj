@@ -13,30 +13,35 @@ struct AppRootView: View {
                     Label("Linen", systemImage: "shippingbox.fill")
                 }
                 .tag(WidgetDeepLinkCoordinator.Tab.home)
+                .accessibilityIdentifier("tab.linen")
 
             ShiftTabView()
                 .tabItem {
                     Label("Shift", systemImage: "briefcase.fill")
                 }
                 .tag(WidgetDeepLinkCoordinator.Tab.shift)
+                .accessibilityIdentifier("tab.shift")
 
             InsightsView()
                 .tabItem {
                     Label("Insights", systemImage: "chart.bar.fill")
                 }
                 .tag(WidgetDeepLinkCoordinator.Tab.insights)
+                .accessibilityIdentifier("tab.insights")
 
             LogsTabView()
                 .tabItem {
                     Label("Logs", systemImage: "clock.arrow.circlepath")
                 }
                 .tag(WidgetDeepLinkCoordinator.Tab.logs)
+                .accessibilityIdentifier("tab.logs")
 
             SettingsTabView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
                 .tag(WidgetDeepLinkCoordinator.Tab.settings)
+                .accessibilityIdentifier("tab.settings")
         }
         .tint(themeSettings.isPractical ? Color(red: 0.10, green: 0.48, blue: 0.98) : .cyan)
         .environment(deepLinkCoordinator)

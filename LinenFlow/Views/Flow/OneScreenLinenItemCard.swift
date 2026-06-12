@@ -154,6 +154,9 @@ struct OneScreenLinenItemCard: View {
             scrollableCardContent
         }
         .animation(reduceMotion ? nil : .snappy(duration: 0.28), value: isCompactPinned)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: distributionExpanded)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("linen.itemCard.\(item.name.replacingOccurrences(of: " ", with: "_"))")
         .contextMenu {
             Picker("Card Background", selection: $cardBackground) {
                 ForEach(LinenCardBackground.allCases) { background in
@@ -484,6 +487,7 @@ struct OneScreenLinenItemCard: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.blue)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.72)
                 Image(systemName: floorOrderDescending ? "arrow.down" : "arrow.up")
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.blue)
@@ -491,6 +495,10 @@ struct OneScreenLinenItemCard: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(Color.blue.opacity(0.13), in: Capsule())
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel(floorOrderAccessibilityLabel)
+            .accessibilityHint("Double tap to switch floor order.")
         }
         .contentShape(Rectangle())
         .onTapGesture { toggleFloorOrder() }
@@ -516,6 +524,10 @@ struct OneScreenLinenItemCard: View {
         distributionExpanded
             ? "Double tap to change floor order. Use the context menu to collapse."
             : "Double tap to expand floor distribution."
+    }
+
+    private var floorOrderAccessibilityLabel: String {
+        floorOrderDescending ? "Floor order, top down" : "Floor order, bottom up"
     }
 
     private func resultSection() -> some View {
