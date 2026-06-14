@@ -7,12 +7,12 @@ struct CollapsibleSection<Content: View>: View {
     @Binding var isExpanded: Bool
     @ViewBuilder var content: () -> Content
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(spacing: 8) {
             Button {
-                withAnimation(.snappy(duration: 0.22)) {
-                    isExpanded.toggle()
-                }
+                isExpanded.toggle()
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: systemImage)
@@ -43,9 +43,11 @@ struct CollapsibleSection<Content: View>: View {
 
             if isExpanded {
                 content()
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(
+                        reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top))
+                    )
             }
         }
-        .animation(.snappy(duration: 0.22), value: isExpanded)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: isExpanded)
     }
 }
