@@ -24,6 +24,7 @@ struct WorkScheduleDayCard: View {
     @Binding var day: WorkScheduleDay
     let onChanged: () -> Void
     @State private var expanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let towerOptions: [String] = [
         "Unassigned",
@@ -66,7 +67,7 @@ struct WorkScheduleDayCard: View {
 
                 if day.isWorkday {
                     Button {
-                        withAnimation(.snappy(duration: 0.24)) { expanded.toggle() }
+                        withAnimation(reduceMotion ? nil : .snappy(duration: 0.24)) { expanded.toggle() }
                     } label: {
                         HStack {
                             Text(expanded ? "Less" : "Edit Details")

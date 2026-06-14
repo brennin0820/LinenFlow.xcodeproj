@@ -89,6 +89,12 @@ struct HomeView: View {
             }
         }
         .onChange(of: viewModel.selectedTower?.id) { oldTowerID, newTowerID in
+            // Switching towers re-filters the editable item list; the in-progress
+            // focused item may no longer exist, which would strand the keyboard
+            // editing UI with no highlighted card. End editing on any real change.
+            if oldTowerID != newTowerID, focusedItemID != nil {
+                endEditing()
+            }
             resetDraftSelectedItems()
             itemPickerExpanded = false
             refreshShiftIntelligence()
