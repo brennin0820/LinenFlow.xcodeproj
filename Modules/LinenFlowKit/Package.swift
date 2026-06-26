@@ -14,16 +14,18 @@ import PackageDescription
 //   • LinenFlowUI     — Views + ViewModels (presentation). Depends on Engine + Core.
 //   • App             — the thin executable target in LinenFlow.xcodeproj.
 //
-// The app target sets SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor; the same
-// default isolation is applied here so the moved code keeps its semantics.
-let mainActorIsolation: [SwiftSetting] = [
-    .defaultIsolation(MainActor.self)
+// The moved code is built in Swift language mode 5 to match the app target's
+// SWIFT_VERSION = 5.0 (same concurrency-checking semantics it had before).
+let sharedSwiftSettings: [SwiftSetting] = [
+    .swiftLanguageMode(.v5)
 ]
 
 let package = Package(
     name: "LinenFlowKit",
+    // Platform floor; the app target deploys higher. `.v18` is the highest
+    // value available in the CI toolchain (Xcode 16.4).
     platforms: [
-        .iOS(.v26)
+        .iOS(.v18)
     ],
     products: [
         .library(name: "LinenFlowCore", targets: ["LinenFlowCore"]),
@@ -39,13 +41,13 @@ let package = Package(
             exclude: [
                 "LiveActivity/ShiftActivityWidget.swift",
             ],
-            swiftSettings: mainActorIsolation
+            swiftSettings: sharedSwiftSettings
         ),
         .target(
             name: "LinenFlowEngine",
             dependencies: ["LinenFlowCore"],
             path: "Sources/LinenFlowEngine",
-            swiftSettings: mainActorIsolation
+            swiftSettings: sharedSwiftSettings
         ),
         .target(
             name: "LinenFlowUI",
@@ -61,7 +63,7 @@ let package = Package(
                 "Views/Flow/Legacy/ResultsView.swift",
                 "Views/Flow/Legacy/ReviewReceivedView.swift",
             ],
-            swiftSettings: mainActorIsolation
+            swiftSettings: sharedSwiftSettings
         ),
     ]
 )
