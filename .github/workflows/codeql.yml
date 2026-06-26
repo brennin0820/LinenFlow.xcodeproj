@@ -27,7 +27,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [swift, java-kotlin]
+        include:
+          - language: swift
+            build-mode: manual
+          - language: java-kotlin
+            build-mode: none
 
     steps:
       - name: Checkout
@@ -37,6 +41,7 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
           config-file: ./.github/codeql/codeql-config.yml
 
       - name: Select Xcode
@@ -71,7 +76,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: Set up JDK
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' && matrix.build-mode != 'none'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -79,11 +84,11 @@ jobs:
           cache: gradle
 
       - name: Set up Android SDK
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' && matrix.build-mode != 'none'
         uses: android-actions/setup-android@v4
 
       - name: Build for CodeQL (Android)
-        if: matrix.language == 'java-kotlin'
+        if: matrix.language == 'java-kotlin' && matrix.build-mode != 'none'
         working-directory: android
         run: |
           chmod +x gradlew
