@@ -2,6 +2,9 @@ import XCTest
 import SwiftData
 import os
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 @MainActor
 final class DailyLogSaveTests: XCTestCase {

@@ -1,5 +1,8 @@
 import XCTest
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 final class ShiftIntelligenceServiceTests: XCTestCase {
     private var calendar: Calendar!

@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 import OSLog
 import CoreLocation
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 /// Bridges AppDelegate cold-launch handling with the live orchestrator instance.
 @MainActor

@@ -1,6 +1,9 @@
 import Foundation
 import UserNotifications
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 final class MockNotificationService: NotificationServiceProtocol, @unchecked Sendable {
     private(set) var scheduled: [UNNotificationRequest] = []

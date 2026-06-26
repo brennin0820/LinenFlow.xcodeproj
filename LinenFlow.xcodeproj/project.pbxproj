@@ -11,6 +11,12 @@
 		629AA0A12FBFC76C0077750C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 629AA0A02FBFC76B0077750C /* WidgetKit.framework */; };
 		629AA0A32FBFC76C0077750C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 629AA0A22FBFC76C0077750C /* SwiftUI.framework */; };
 		629AA0B42FBFC76D0077750C /* HimmerFlow WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 629AA09E2FBFC76B0077750C /* HimmerFlow WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FEEDFACE0000000000000005 /* LinenFlowCore in Frameworks */ = {isa = PBXBuildFile; productRef = FEEDFACE0000000000000002 /* LinenFlowCore */; };
+		FEEDFACE0000000000000006 /* LinenFlowEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FEEDFACE0000000000000003 /* LinenFlowEngine */; };
+		FEEDFACE0000000000000007 /* LinenFlowUI in Frameworks */ = {isa = PBXBuildFile; productRef = FEEDFACE0000000000000004 /* LinenFlowUI */; };
+		FEEDFACE000000000000000B /* LinenFlowCore in Frameworks */ = {isa = PBXBuildFile; productRef = FEEDFACE0000000000000008 /* LinenFlowCore */; };
+		FEEDFACE000000000000000C /* LinenFlowEngine in Frameworks */ = {isa = PBXBuildFile; productRef = FEEDFACE0000000000000009 /* LinenFlowEngine */; };
+		FEEDFACE000000000000000D /* LinenFlowUI in Frameworks */ = {isa = PBXBuildFile; productRef = FEEDFACE000000000000000A /* LinenFlowUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,13 +79,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				LiveActivity/ShiftActivityWidget.swift,
-				Views/Flow/Legacy/FloorDistributionView.swift,
-				Views/Flow/Legacy/FlowStep.swift,
-				Views/Flow/Legacy/RebalanceShortFloorsView.swift,
-				Views/Flow/Legacy/ReceivingView.swift,
-				Views/Flow/Legacy/ResultsView.swift,
-				Views/Flow/Legacy/ReviewReceivedView.swift,
 			);
 			target = 62B430B52FB9670C000654DB /* HimmerFlow */;
 		};
@@ -128,6 +127,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FEEDFACE0000000000000005 /* LinenFlowCore in Frameworks */,
+				FEEDFACE0000000000000006 /* LinenFlowEngine in Frameworks */,
+				FEEDFACE0000000000000007 /* LinenFlowUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -135,6 +137,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FEEDFACE000000000000000B /* LinenFlowCore in Frameworks */,
+				FEEDFACE000000000000000C /* LinenFlowEngine in Frameworks */,
+				FEEDFACE000000000000000D /* LinenFlowUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,6 +230,9 @@
 			);
 			name = HimmerFlow;
 			packageProductDependencies = (
+				FEEDFACE0000000000000002 /* LinenFlowCore */,
+				FEEDFACE0000000000000003 /* LinenFlowEngine */,
+				FEEDFACE0000000000000004 /* LinenFlowUI */,
 			);
 			productName = HimmerFlow;
 			productReference = 62B430B62FB9670C000654DB /* HimmerFlow.app */;
@@ -248,6 +256,9 @@
 			);
 			name = HimmerFlowTests;
 			packageProductDependencies = (
+				FEEDFACE0000000000000008 /* LinenFlowCore */,
+				FEEDFACE0000000000000009 /* LinenFlowEngine */,
+				FEEDFACE000000000000000A /* LinenFlowUI */,
 			);
 			productName = HimmerFlowTests;
 			productReference = AABBCCDDEEFF112233440001 /* HimmerFlowTests.xctest */;
@@ -313,6 +324,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				6253885B2FC371EA00E8AE40 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
+				FEEDFACE0000000000000001 /* XCLocalSwiftPackageReference "LinenFlowKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 62B430B72FB9670C000654DB /* Products */;
@@ -829,6 +841,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		FEEDFACE0000000000000001 /* XCLocalSwiftPackageReference "LinenFlowKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/LinenFlowKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		6253885B2FC371EA00E8AE40 /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -839,6 +858,39 @@
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FEEDFACE0000000000000002 /* LinenFlowCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEEDFACE0000000000000001 /* XCLocalSwiftPackageReference "LinenFlowKit" */;
+			productName = LinenFlowCore;
+		};
+		FEEDFACE0000000000000003 /* LinenFlowEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEEDFACE0000000000000001 /* XCLocalSwiftPackageReference "LinenFlowKit" */;
+			productName = LinenFlowEngine;
+		};
+		FEEDFACE0000000000000004 /* LinenFlowUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEEDFACE0000000000000001 /* XCLocalSwiftPackageReference "LinenFlowKit" */;
+			productName = LinenFlowUI;
+		};
+		FEEDFACE0000000000000008 /* LinenFlowCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEEDFACE0000000000000001 /* XCLocalSwiftPackageReference "LinenFlowKit" */;
+			productName = LinenFlowCore;
+		};
+		FEEDFACE0000000000000009 /* LinenFlowEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEEDFACE0000000000000001 /* XCLocalSwiftPackageReference "LinenFlowKit" */;
+			productName = LinenFlowEngine;
+		};
+		FEEDFACE000000000000000A /* LinenFlowUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FEEDFACE0000000000000001 /* XCLocalSwiftPackageReference "LinenFlowKit" */;
+			productName = LinenFlowUI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 62B430AE2FB9670C000654DB /* Project object */;
 }

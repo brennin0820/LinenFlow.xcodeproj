@@ -1,0 +1,183 @@
+import SwiftUI
+import LinenFlowCore
+import LinenFlowEngine
+
+/// Numeric input that also accepts simple arithmetic (`245*11`, `60+60`, `(245*2)+60`).
+/// The raw expression stays visible; the evaluated whole-piece value updates a separate binding.
+public struct PremiumExpressionInput: View {
+    public let label: String
+    @Binding public var expression: String
+    @Binding public var evaluated: Int
+    public var suffix: String? = nil
+    public var placeholder: String = "e.g. 245.2"
+    public var requestsFocusOnAppear = false
+    public var focusRequest: Int = 0
+    public var focusReleaseRequest: Int = 0
+    public var showArithmeticKeys: Bool = false
+    public var onFocusChange: ((Bool) -> Void)? = nil
+    public var onCommit: ((Int) -> Void)? = nil
+
+    @State private var liveError: ArithmeticError?
+    @FocusState private var isFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var shouldShowArithmeticKeys: Bool {
+        showArithmeticKeys && isFocused
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            if !label.isEmpty {
+                Text(label)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            inputField
+            if shouldShowArithmeticKeys {
+                ArithmeticKeypadStrip { token in
+                    appendToken(token)
+                }
+                .transition(
+                    reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top))
+                )
+            }
+            statusLine
+        }
+        .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: shouldShowArithmeticKeys)
+        .onAppear {
+            recompute(expression)
+            if requestsFocusOnAppear {
+                isFocused = true
+            }
+        }
+        .onChange(of: focusRequest) { old, new in
+            guard new > old else { return }
+            isFocused = true
+        }
+        .onChange(of: focusReleaseRequest) { old, new in
+            // Only explicit release increments (endEditing); ignore demotion to 0.
+            guard new > old else { return }
+            isFocused = false
+        }
+        .onChange(of: isFocused) { _, focused in
+            onFocusChange?(focused)
+        }
+    }
+
+    private var inputField: some View {
+        HStack(spacing: 8) {
+            TextField(placeholder, text: $expression)
+                .keyboardType(.numbersAndPunctuation)
+                .textFieldStyle(.plain)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .submitLabel(.done)
+                .focused($isFocused)
+                .font(.title3.weight(.semibold).monospacedDigit())
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onChange(of: expression) { old, new in
+                    let filtered = ArithmeticInputRules.filter(new, previous: old)
+                    if filtered != new {
+                        expression = filtered
+                        return
+                    }
+                    recompute(new)
+                }
+                .onSubmit {
+                    recompute(expression)
+                    onCommit?(evaluated)
+                    isFocused = false
+                }
+            if let suffix {
+                Text(suffix)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity)
+        .background(Color.white.opacity(isFocused ? 0.08 : 0.055), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(isFocused ? Color.blue.opacity(0.75) : Color.white.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private var statusLine: some View {
+        let trimmed = expression.trimmingCharacters(in: .whitespaces)
+        if let liveError {
+            HStack(spacing: 5) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                Text(message(for: liveError))
+            }
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(.red.opacity(0.88))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 16, alignment: .topLeading)
+        } else if !trimmed.isEmpty {
+            // If the user typed a plain integer, the green computed line is redundant; hide it.
+            if Int(trimmed) != nil {
+                Color.clear.frame(height: 0)
+            } else {
+                HStack(spacing: 5) {
+                    Image(systemName: "equal.circle.fill")
+                    Text(statusValueLabel)
+                        .monospacedDigit()
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.green.opacity(0.88))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minHeight: 16, alignment: .topLeading)
+            }
+        } else {
+            Color.clear.frame(height: 0)
+        }
+    }
+
+    private var statusValueLabel: String {
+        if let suffix, !suffix.isEmpty {
+            return "\(evaluated) \(suffix)"
+        }
+        return "\(evaluated) pcs"
+    }
+
+    private func appendToken(_ token: String) {
+        guard ArithmeticInputRules.canAppend(token, to: expression) else { return }
+        expression.append(token)
+    }
+
+    private func recompute(_ input: String) {
+        let trimmed = input.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty {
+            evaluated = 0
+            liveError = nil
+            return
+        }
+        switch ArithmeticExpressionService.evaluatePieces(input) {
+        case .success(let v):
+            evaluated = v
+            liveError = nil
+        case .failure(let err):
+            liveError = err
+        }
+    }
+
+    private func message(for err: ArithmeticError) -> String {
+        switch err {
+        case .empty: return "Enter a value."
+        case .invalidCharacter(let c): return "Invalid character '\(c)'."
+        case .partial: return "Incomplete expression."
+        case .mismatchedParens: return "Mismatched parentheses."
+        case .multipleDotMultipliers: return "Use one \".\" multiply (e.g. 245.2)."
+        case .multipleGroupedExpressions: return "Add +, −, ×, or ÷ between parts."
+        case .divisionByZero: return "Cannot divide by zero."
+        case .negativeNotAllowed: return "Value must be 0 or more."
+        case .fractionalNotAllowed: return "Value must be a whole number."
+        }
+    }
+}

@@ -1,5 +1,8 @@
 import Foundation
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 final class MockLiveActivityService: LiveActivityServiceProtocol, @unchecked Sendable {
     var canStartFromBackground: Bool { false }
