@@ -1,6 +1,9 @@
 import Testing
 import Foundation
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 @Suite("OperationalShiftStateEngine")
 struct OperationalShiftStateEngineTests {

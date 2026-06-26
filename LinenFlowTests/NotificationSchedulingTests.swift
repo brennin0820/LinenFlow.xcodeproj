@@ -2,6 +2,9 @@ import Foundation
 import Testing
 import UserNotifications
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 @Suite("NotificationScheduling")
 struct NotificationSchedulingTests {

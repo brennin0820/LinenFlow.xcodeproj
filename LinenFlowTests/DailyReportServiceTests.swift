@@ -1,5 +1,8 @@
 import XCTest
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 final class DailyReportServiceTests: XCTestCase {
     func test_makeShareText_includesCoreReportTotalsAndItems() {

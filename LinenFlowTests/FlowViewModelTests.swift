@@ -1,6 +1,9 @@
 import XCTest
 import SwiftData
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 @MainActor
 final class FlowViewModelTests: XCTestCase {

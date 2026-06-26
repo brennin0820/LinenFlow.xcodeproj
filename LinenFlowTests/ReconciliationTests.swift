@@ -4,6 +4,9 @@ import SwiftData
 import Testing
 import UserNotifications
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 // MARK: - Mocks (workstream 2 provides production mocks; local copies for reconciliation tests)
 

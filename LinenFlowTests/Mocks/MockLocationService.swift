@@ -1,6 +1,9 @@
 import CoreLocation
 import Foundation
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 final class MockLocationService: LocationServiceProtocol, @unchecked Sendable {
     var authorizationStatus: CLAuthorizationStatus = .authorizedAlways

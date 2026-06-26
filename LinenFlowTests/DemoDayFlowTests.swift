@@ -1,6 +1,9 @@
 import XCTest
 import SwiftData
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 /// End-to-end assertions on the full Demo Day fixture from the build prompt.
 /// Many top-level assertions overlap with FlowViewModelTests; this file pins

@@ -1,5 +1,8 @@
 import XCTest
 @testable import HimmerFlow
+import LinenFlowCore
+import LinenFlowEngine
+import LinenFlowUI
 
 final class OperationalPlanningTests: XCTestCase {
     func test_carryGroupBuilder_bathTowelCreatesPhysicalBinsFromBinCount() {
