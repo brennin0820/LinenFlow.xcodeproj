@@ -68,7 +68,7 @@ Five open PRs, none merged in the last two weeks despite CI having been red that
 
 The app was recently sliced into a clean one-way dependency graph (commit `d7137bf`):
 
-```
+```text
 App (HimmerFlow target) → LinenFlowUI → LinenFlowEngine → LinenFlowCore
 ```
 
