@@ -14,7 +14,7 @@
 | Android CI | 🟢 Green | Last real run (2026-06-12) passed; path-filtered so it hasn't re-run since |
 | Swift Format lint | 🟡 Gap | Doesn't cover `Modules/LinenFlowKit`, where ~90% of the app's Swift now lives |
 | Test suite | ⚪ Unknown | Can't execute — blocked by the build failure above |
-| Open PRs | 4 | One (`#12`) is the fix for the build break and is sitting unmerged |
+| Open PRs | 5 | One (`#12`) is the fix for the build break and is sitting unmerged |
 | Dependencies | 🟡 Behind | 2 open Dependabot PRs (Android deps, `actions/checkout`) |
 
 **Bottom line:** the app does not currently compile. This is a single well-understood syntax error with a fix already proposed in an open PR. Everything else in the repo is in reasonably good shape once that's merged.
@@ -62,7 +62,7 @@ Likely root cause: this looks like an artifact of the recent "slice app into 4 m
 | [7](https://github.com/brennin0820/LinenFlow.xcodeproj/pull/7) | Bump `actions/checkout` 6 → 7 | dependabot | open, not draft | Routine, low risk |
 | [6](https://github.com/brennin0820/LinenFlow.xcodeproj/pull/6) | Fix UI behavior defects (stale edit focus, VoiceOver label, Reduce Motion) | brennin0820 (Claude) | draft | Small, well-scoped SwiftUI fixes; been open since 2026-06-14 |
 
-Four open PRs, none merged in the last two weeks despite CI having been red that whole time — worth a merge pass, starting with #12.
+Five open PRs, none merged in the last two weeks despite CI having been red that whole time — worth a merge pass, starting with #12.
 
 ## 4. Code structure & size
 
