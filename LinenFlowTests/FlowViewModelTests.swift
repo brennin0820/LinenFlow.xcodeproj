@@ -520,6 +520,45 @@ final class FlowViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.receivingEntries.map(\.itemName), ["Bath Towel"])
     }
 
+    func test_seedIfNeeded_doesNotRestoreDefaultAvailabilityAfterTowerItemSave() throws {
+        let towers = try container.mainContext.fetch(FetchDescriptor<Tower>())
+        let lagoon = try XCTUnwrap(towers.first { $0.name == "Lagoon" })
+        viewModel.selectTower(lagoon)
+
+        let bathTowel = try XCTUnwrap(viewModel.availableItems.first { $0.name == "Bath Towel" })
+        let bathMat = try XCTUnwrap(viewModel.availableItems.first { $0.name == "Bath Mat" })
+        try viewModel.saveSelectedItems([bathTowel.id], for: lagoon)
+
+        XCTAssertFalse(viewModel.itemIsAvailable(bathMat, for: lagoon))
+
+        SeedService.seedIfNeeded(context: container.mainContext, isCustomProperty: false)
+        viewModel.refreshAvailable()
+
+        let reloadedBathMat = try XCTUnwrap(viewModel.availableItems.first { $0.name == "Bath Mat" })
+        XCTAssertFalse(
+            viewModel.itemIsAvailable(reloadedBathMat, for: lagoon),
+            "Boot-time seeding must not restore DefaultData all-towers availability after a per-tower save"
+        )
+        XCTAssertEqual(reloadedBathMat.availabilityScope, .selectedTowers)
+    }
+
+    func test_seedIfNeeded_customProperty_doesNotClearImportedItemTowerRestrictions() throws {
+        let kingSheet = try XCTUnwrap(
+            (try container.mainContext.fetch(FetchDescriptor<LinenItem>())).first { $0.name == "King Sheet" }
+        )
+        kingSheet.availabilityScope = .selectedTowers
+        kingSheet.allowedTowerNames = ["Custom Tower"]
+        try container.mainContext.save()
+
+        SeedService.seedIfNeeded(context: container.mainContext, isCustomProperty: true)
+
+        let reloaded = try XCTUnwrap(
+            (try container.mainContext.fetch(FetchDescriptor<LinenItem>())).first { $0.name == "King Sheet" }
+        )
+        XCTAssertEqual(reloaded.availabilityScope, .selectedTowers)
+        XCTAssertEqual(reloaded.allowedTowerNames, ["Custom Tower"])
+    }
+
     // MARK: - Industrial hardening: session re-entry / tower switch / widget integrity
 
     func test_startDeliverySession_isNoOpWhenAlreadyActive() throws {

@@ -121,14 +121,9 @@ public enum SeedService {
                     existingItem.piecesPerBin = item.piecesPerBin
                     didChange = true
                 }
-                if existingItem.availabilityScope != effectiveScope {
-                    existingItem.availabilityScope = effectiveScope
-                    didChange = true
-                }
-                if existingItem.allowedTowerNames != effectiveAllowedTowers {
-                    existingItem.allowedTowerNames = effectiveAllowedTowers
-                    didChange = true
-                }
+                // Availability is user-editable and seedIfNeeded runs every launch.
+                // Overwriting it here restored DefaultData after a relaunch.
+                //
                 // Migrate legacy items: if they have allowedTowerNames but scope is still allTowers
                 if !isCustomProperty && !existingItem.allowedTowerNames.isEmpty && existingItem.availabilityScope == .allTowers {
                     existingItem.availabilityScope = .selectedTowers
