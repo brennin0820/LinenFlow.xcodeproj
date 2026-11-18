@@ -8,7 +8,7 @@ public enum LinenCalculatorService {
         case .fixedBin:
             let bins = max(0, entry.binCount ?? 0)
             let perBin = max(0, entry.piecesPerBin ?? 0)
-            return bins * perBin
+            return SafeQuantityMath.nonNegativeProduct(bins, perBin)
         case .manualPieces, .cartLabelPieces:
             return max(0, entry.manualPieces ?? 0)
         }
@@ -23,12 +23,12 @@ public enum LinenCalculatorService {
     }
 
     public static func calculateRequiredPieces(floorCount: Int, parCount: Int) -> Int {
-        max(0, floorCount) * max(0, parCount)
+        SafeQuantityMath.nonNegativeProduct(floorCount, parCount)
     }
 
     /// Par is bundles per floor (bundle-delivery towers).
     public static func calculateRequiredBundles(floorCount: Int, parCount: Int) -> Int {
-        max(0, floorCount) * max(0, parCount)
+        SafeQuantityMath.nonNegativeProduct(floorCount, parCount)
     }
 
     public static func calculateRequiredPiecesFromBundlePar(
@@ -36,20 +36,18 @@ public enum LinenCalculatorService {
         parCount: Int,
         bundleSize: Int
     ) -> Int {
-        calculateRequiredBundles(floorCount: floorCount, parCount: parCount) * max(0, bundleSize)
+        SafeQuantityMath.nonNegativeProduct(
+            calculateRequiredBundles(floorCount: floorCount, parCount: parCount),
+            bundleSize
+        )
     }
 
     public static func calculateRequiredBundlesFromPieces(requiredPieces: Int, bundleSize: Int) -> Int {
-        guard bundleSize > 0 else { return 0 }
-        return Int(ceil(Double(max(0, requiredPieces)) / Double(bundleSize)))
+        SafeQuantityMath.ceilNonNegativeDivision(requiredPieces, by: bundleSize)
     }
 
     public static func calculateSignedDifferenceBundlesFromPieces(differencePieces: Int, bundleSize: Int) -> Int {
-        guard bundleSize > 0 else { return 0 }
-        if differencePieces >= 0 {
-            return differencePieces / bundleSize
-        }
-        return -Int(ceil(Double(abs(differencePieces)) / Double(bundleSize)))
+        SafeQuantityMath.signedBundleDifference(differencePieces: differencePieces, bundleSize: bundleSize)
     }
 
     public static func calculateDifference(receivedPieces: Int, requiredPieces: Int) -> Int {

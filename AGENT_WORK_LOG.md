@@ -39,6 +39,7 @@ These files have the highest merge-conflict risk. **Serialize** — one active a
 
 | Agent ID | Task | Files owned | Status | Started (UTC) |
 |----------|------|-------------|--------|---------------|
+| `chatgpt-20261118-calc` | Calculator overflow/rounding safety + regression tests | `Modules/LinenFlowKit/Sources/LinenFlowCore/Utilities/SafeQuantityMath.swift`, `Modules/LinenFlowKit/Sources/LinenFlowEngine/Services/LinenCalculatorService.swift`, `Modules/LinenFlowKit/Sources/LinenFlowEngine/Services/Algorithms/BundleDistributionAlgorithm.swift`, `LinenFlowTests/CalculatorTests.swift`, `Docs/14_SESSION_HANDOFF.md` | **BLOCKED — iOS CI stopped before logged steps; do not touch** | 2026-11-18 |
 | `a7618ee3` | Phase 11 — polish / a11y (card + input + keyboard shell) | `LinenFlow/Views/Components/KeyboardPinnedEditorShell.swift` | **ACTIVE — do not touch** | 2026-06-07 |
 | `f19a62cd` | Phase 12 — wizard orphan / Legacy folder + HomeView nav | `LinenFlow/Views/HomeView.swift`, `LinenFlow/Views/Flow/Legacy/**`, `LinenFlow/Views/Flow/ReceivingView.swift`, `LinenFlow/Views/Flow/ReviewReceivedView.swift`, `LinenFlow/Views/Flow/ResultsView.swift`, `LinenFlow/Views/Flow/FloorDistributionView.swift`, `LinenFlow/Views/Flow/RebalanceShortFloorsView.swift`, `LinenFlow.xcodeproj/project.pbxproj` | **ACTIVE — do not touch** | 2026-06-07 |
 | `9e5546a4` | Floor detection — VM + delivery UI | `LinenFlow/ViewModels/FlowViewModel.swift`, `LinenFlow/Views/Flow/ShiftCommandCenterView.swift`, `LinenFlow/Views/Flow/FloorChecklistView.swift`, `LinenFlow/Views/Flow/FloorDetectionCard.swift` | **ACTIVE — do not touch** | 2026-06-07 |
@@ -47,6 +48,8 @@ These files have the highest merge-conflict risk. **Serialize** — one active a
 | `ios-uitest` | Phase 14 — XCUITest Linen tab happy path | `LinenFlowUITests/LinenTabUITests.swift`, `docs/ledgers/BUILD_LEDGER.md` | **COMPLETE** | 2026-06-11 |
 
 ---
+
+**2026-11-18 verification:** Draft PR #20 is awaiting a macOS Xcode build. GitHub Actions iOS CI job failed in ~3 seconds without runner name, job steps, or retrievable logs. Swift arithmetic stand-alone smoke checks passed 10/10. Do not report iOS build/test success or release these claims until verification succeeds.
 
 ## File Lock Registry
 
@@ -65,6 +68,11 @@ Explicit locks — **do not edit** these paths while locked.
 | `LinenFlow/Views/Flow/ShiftCommandCenterView.swift` | `9e5546a4` | 2026-06-07 | Delivery command center |
 | `LinenFlow/Views/Flow/FloorChecklistView.swift` | `9e5546a4` | 2026-06-07 | Floor checklist |
 | `LinenFlow/Views/Flow/FloorDetectionCard.swift` | `9e5546a4` | 2026-06-07 | New or modified floor detection UI |
+| `Modules/LinenFlowKit/Sources/LinenFlowCore/Utilities/SafeQuantityMath.swift` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
+| `Modules/LinenFlowKit/Sources/LinenFlowEngine/Services/LinenCalculatorService.swift` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
+| `Modules/LinenFlowKit/Sources/LinenFlowEngine/Services/Algorithms/BundleDistributionAlgorithm.swift` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
+| `LinenFlowTests/CalculatorTests.swift` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
+| `Docs/14_SESSION_HANDOFF.md` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
 **Unlocked (safe for new claims if no other agent needs them):** Models, Services (except via FlowViewModel), `AppRootView.swift`, `android/**`, most Components not listed above, `docs/**`.
 
 ---
