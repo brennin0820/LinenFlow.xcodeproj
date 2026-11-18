@@ -32,7 +32,7 @@ public enum BundleDistributionAlgorithm {
         parPerFloor: Int
     ) -> (maxAllowedBundles: Int, deliverableBundles: Int, shortageBundles: Int, leftoverBundles: Int) {
         let safeFullBundles = max(0, fullBundles)
-        let maxAllowedBundles = max(0, floorCount) * max(0, parPerFloor)
+        let maxAllowedBundles = SafeQuantityMath.nonNegativeProduct(floorCount, parPerFloor)
         let deliverableBundles = min(safeFullBundles, maxAllowedBundles)
         let shortageBundles = max(0, maxAllowedBundles - safeFullBundles)
         let leftoverBundles = max(0, safeFullBundles - maxAllowedBundles)
