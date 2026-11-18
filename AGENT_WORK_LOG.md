@@ -37,6 +37,7 @@ These files have the highest merge-conflict risk. **Serialize** — one active a
 
 ## Active Claims
 
+| `chatgpt-20261118-calc` | Calculator overflow/rounding safety + regression tests | `Modules/LinenFlowKit/Sources/LinenFlowCore/Utilities/SafeQuantityMath.swift`, `Modules/LinenFlowKit/Sources/LinenFlowEngine/Services/LinenCalculatorService.swift`, `Modules/LinenFlowKit/Sources/LinenFlowEngine/Services/Algorithms/BundleDistributionAlgorithm.swift`, `LinenFlowTests/CalculatorTests.swift`, `Docs/14_SESSION_HANDOFF.md` | **ACTIVE — do not touch** | 2026-11-18 |
 | Agent ID | Task | Files owned | Status | Started (UTC) |
 |----------|------|-------------|--------|---------------|
 | `a7618ee3` | Phase 11 — polish / a11y (card + input + keyboard shell) | `LinenFlow/Views/Components/KeyboardPinnedEditorShell.swift` | **ACTIVE — do not touch** | 2026-06-07 |
@@ -65,6 +66,11 @@ Explicit locks — **do not edit** these paths while locked.
 | `LinenFlow/Views/Flow/ShiftCommandCenterView.swift` | `9e5546a4` | 2026-06-07 | Delivery command center |
 | `LinenFlow/Views/Flow/FloorChecklistView.swift` | `9e5546a4` | 2026-06-07 | Floor checklist |
 | `LinenFlow/Views/Flow/FloorDetectionCard.swift` | `9e5546a4` | 2026-06-07 | New or modified floor detection UI |
+| `Modules/LinenFlowKit/Sources/LinenFlowCore/Utilities/SafeQuantityMath.swift` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
+| `Modules/LinenFlowKit/Sources/LinenFlowEngine/Services/LinenCalculatorService.swift` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
+| `Modules/LinenFlowKit/Sources/LinenFlowEngine/Services/Algorithms/BundleDistributionAlgorithm.swift` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
+| `LinenFlowTests/CalculatorTests.swift` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
+| `Docs/14_SESSION_HANDOFF.md` | `chatgpt-20261118-calc` | 2026-11-18 | Calculator safety update |
 **Unlocked (safe for new claims if no other agent needs them):** Models, Services (except via FlowViewModel), `AppRootView.swift`, `android/**`, most Components not listed above, `docs/**`.
 
 ---
