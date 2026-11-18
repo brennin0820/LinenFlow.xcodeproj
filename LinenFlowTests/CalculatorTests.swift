@@ -402,9 +402,18 @@ final class CalculatorTests: XCTestCase {
             binCount: Int.max,
             piecesPerBin: 245
         )
-        XCTAssertEqual(LinenCalculatorService.calculateReceivedPieces(entry: hugeBathTowelEntry), Int.max)
-        XCTAssertEqual(LinenCalculatorService.calculateRequiredPieces(floorCount: Int.max, parCount: 2), Int.max)
-        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundles(floorCount: Int.max, parCount: 2), Int.max)
+        XCTAssertEqual(
+            LinenCalculatorService.calculateReceivedPieces(entry: hugeBathTowelEntry),
+            Int.max
+        )
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredPieces(floorCount: Int.max, parCount: 2),
+            Int.max
+        )
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredBundles(floorCount: Int.max, parCount: 2),
+            Int.max
+        )
         XCTAssertEqual(
             LinenCalculatorService.calculateRequiredPiecesFromBundlePar(
                 floorCount: Int.max,
@@ -413,18 +422,37 @@ final class CalculatorTests: XCTestCase {
             ),
             Int.max
         )
-        XCTAssertEqual(LinenCalculatorService.calculateRequiredPieces(floorCount: -21, parCount: 3), 0)
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredPieces(floorCount: -21, parCount: 3),
+            0
+        )
     }
 
     func test_requiredBundleCeiling_usesExactIntegerDivision() {
-        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: Int.max, bundleSize: 1), Int.max)
         XCTAssertEqual(
-            LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: Int.max, bundleSize: 3),
+            LinenCalculatorService.calculateRequiredBundlesFromPieces(
+                requiredPieces: Int.max, bundleSize: 1
+            ),
+            Int.max
+        )
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredBundlesFromPieces(
+                requiredPieces: Int.max, bundleSize: 3
+            ),
             Int.max / 3 + (Int.max % 3 == 0 ? 0 : 1)
         )
-        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: 63, bundleSize: 10), 7)
-        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: -3, bundleSize: 10), 0)
-        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: 63, bundleSize: 0), 0)
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: 63, bundleSize: 10),
+            7
+        )
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: -3, bundleSize: 10),
+            0
+        )
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: 63, bundleSize: 0),
+            0
+        )
     }
 
     func test_signedBundleDifference_handlesIntMinWithoutAbsOverflow() {
@@ -435,10 +463,30 @@ final class CalculatorTests: XCTestCase {
             ),
             Int.min / 10 - 1
         )
-        XCTAssertEqual(LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(differencePieces: -20, bundleSize: 10), -2)
-        XCTAssertEqual(LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(differencePieces: -3, bundleSize: 10), -1)
-        XCTAssertEqual(LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(differencePieces: 19, bundleSize: 10), 1)
-        XCTAssertEqual(LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(differencePieces: -3, bundleSize: 0), 0)
+        XCTAssertEqual(
+            LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(
+                differencePieces: -20, bundleSize: 10
+            ),
+            -2
+        )
+        XCTAssertEqual(
+            LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(
+                differencePieces: -3, bundleSize: 10
+            ),
+            -1
+        )
+        XCTAssertEqual(
+            LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(
+                differencePieces: 19, bundleSize: 10
+            ),
+            1
+        )
+        XCTAssertEqual(
+            LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(
+                differencePieces: -3, bundleSize: 0
+            ),
+            0
+        )
     }
 
     func test_oversizedBundleParCapacity_saturatesWithoutCrashing() {
