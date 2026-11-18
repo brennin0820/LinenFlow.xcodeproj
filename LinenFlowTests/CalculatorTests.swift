@@ -395,6 +395,64 @@ final class CalculatorTests: XCTestCase {
         XCTAssertEqual(summary.remainderPieces, 0)
     }
 
+    func test_oversizedQuantities_saturateInsteadOfCrashing() {
+        let hugeBathTowelEntry = ReceivingEntry(
+            itemName: "Bath Towel",
+            countMethod: .fixedBin,
+            binCount: Int.max,
+            piecesPerBin: 245
+        )
+        XCTAssertEqual(LinenCalculatorService.calculateReceivedPieces(entry: hugeBathTowelEntry), Int.max)
+        XCTAssertEqual(LinenCalculatorService.calculateRequiredPieces(floorCount: Int.max, parCount: 2), Int.max)
+        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundles(floorCount: Int.max, parCount: 2), Int.max)
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredPiecesFromBundlePar(
+                floorCount: Int.max,
+                parCount: 2,
+                bundleSize: 5
+            ),
+            Int.max
+        )
+        XCTAssertEqual(LinenCalculatorService.calculateRequiredPieces(floorCount: -21, parCount: 3), 0)
+    }
+
+    func test_requiredBundleCeiling_usesExactIntegerDivision() {
+        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: Int.max, bundleSize: 1), Int.max)
+        XCTAssertEqual(
+            LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: Int.max, bundleSize: 3),
+            Int.max / 3 + (Int.max % 3 == 0 ? 0 : 1)
+        )
+        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: 63, bundleSize: 10), 7)
+        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: -3, bundleSize: 10), 0)
+        XCTAssertEqual(LinenCalculatorService.calculateRequiredBundlesFromPieces(requiredPieces: 63, bundleSize: 0), 0)
+    }
+
+    func test_signedBundleDifference_handlesIntMinWithoutAbsOverflow() {
+        XCTAssertEqual(
+            LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(
+                differencePieces: Int.min,
+                bundleSize: 10
+            ),
+            Int.min / 10 - 1
+        )
+        XCTAssertEqual(LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(differencePieces: -20, bundleSize: 10), -2)
+        XCTAssertEqual(LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(differencePieces: -3, bundleSize: 10), -1)
+        XCTAssertEqual(LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(differencePieces: 19, bundleSize: 10), 1)
+        XCTAssertEqual(LinenCalculatorService.calculateSignedDifferenceBundlesFromPieces(differencePieces: -3, bundleSize: 0), 0)
+    }
+
+    func test_oversizedBundleParCapacity_saturatesWithoutCrashing() {
+        let plan = LinenCalculatorService.calculateBundleDeliveryPlan(
+            fullBundles: 5,
+            floorCount: Int.max,
+            parPerFloor: 2
+        )
+        XCTAssertEqual(plan.maxAllowedBundles, Int.max)
+        XCTAssertEqual(plan.deliverableBundles, 5)
+        XCTAssertEqual(plan.shortageBundles, Int.max - 5)
+        XCTAssertEqual(plan.leftoverBundles, 0)
+    }
+
     // MARK: - DailyLog snapshot round-trip
 
     func test_dailyLog_snapshotRoundTrip() {
